@@ -184,7 +184,7 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
             separatorColor = a.getColor(R.styleable.EmptyTableView_separatorColor,  Color.BLACK)
             separatorWidth = a.getDimension(R.styleable.EmptyTableView_separatorWidth,  0f)
 
-            assignSeperators(a.getString(R.styleable.EmptyTableView_separators) ?: "")
+            assignSeparators(a.getString(R.styleable.EmptyTableView_separators) ?: "")
 
             tableBorderColor = a.getColor(R.styleable.EmptyTableView_borderColor,     Color.GRAY)
             borderSize = a.getDimension(R.styleable.EmptyTableView_borderWidth, 0f)
@@ -204,7 +204,7 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
         tableBorderPaint.color = tableBorderColor
     }
 
-    fun assignSeperators(sepsStr: CharSequence) {
+    fun assignSeparators(sepsStr: CharSequence) {
         var currentNumber = StringBuilder(2)
         for (i in sepsStr) {
             if (i.isDigit()) {
