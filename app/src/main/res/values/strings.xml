@@ -1,0 +1,13 @@
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="cant_place_here">You can\'t place this here</string>
+    <string name="app_name">SeatingPlanner</string>
+    <string name="add">add</string>
+    <string name="separators">Separators: <xliff:g>%d</xliff:g></string>
+    <string name="separators_hint">""At which positions are this tables Separators</string>
+    <string name="delete">Delete</string>
+    <string name="seats">Seats: <xliff:g>%d</xliff:g></string>
+    <string name="seats_hint">Number of seats</string>
+    <string name="rotation">rotation: <xliff:g>%d</xliff:g></string>
+    <string name="rotation_hint">This tables rotation</string>
+    <string name="apply_changes">Apply Changes</string>
+</resources>

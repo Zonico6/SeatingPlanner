@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="EmptyTableView">
+        <attr name="seatCount" format="integer"/>
+        <attr name="seatWidth" format="dimension" />
+        <attr name="seatHeight" format="dimension" />
+        <!--<attr name="table_drawable" format="reference" /> -->
+        <attr name="borderWidth" format="dimension" />
+        <attr name="borderColor" format="color" />
+        <attr name="cornerRadius" format="dimension" />
+        <!--<attr name="table_color" format="color" />-->
+        <attr name="dividerWidth" format="dimension" />
+        <attr name="dividerColor" format="color" />
+        <!--<attr name="seat_drawable" format="reference" /> _TODO: Make sure reference is the right format for an image-->
+        <!--<attr name="seat_borderWidth" format="dimension" />-->
+        <!--<attr name="seat_borderColor" format="color" />-->
+        <attr name="seatColor" format="color" />
+
+        <attr name="separatorWidth" format="dimension" />
+        <attr name="separatorColor" format="color" />
+        <attr name="separators" format="string" />
+    </declare-styleable>
+</resources>

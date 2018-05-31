@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".tablePlan.ConstructEmptyPlanActivity">
+
+    <android.support.constraint.Group
+        android:id="@+id/options_group"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:constraint_referenced_ids="separators,seat_count,rotation_tv,delete_btn" />
+
+    <EditText
+        android:id="@+id/rotation_tv"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_marginTop="40dp"
+        android:layout_weight="2"
+        android:hint="@string/rotation_hint"
+        android:textSize="20sp"
+        android:inputType="numberDecimal"
+        app:layout_constraintEnd_toEndOf="@+id/seat_count"
+        app:layout_constraintStart_toStartOf="@+id/seat_count"
+        app:layout_constraintTop_toBottomOf="@+id/seat_count" />
+
+    <EditText
+        android:id="@+id/seat_count"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="40dp"
+        android:layout_weight="2"
+        android:textSize="20sp"
+        android:hint="@string/seats_hint"
+        android:inputType="numberDecimal|numberSigned|textNoSuggestions"
+        app:layout_constrainedWidth="true"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/options_guide"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <EditText
+        android:id="@+id/separators"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="40dp"
+        android:hint="@string/separators_hint"
+        android:textSize="20sp"
+        android:inputType="textNoSuggestions"
+        app:layout_constraintEnd_toEndOf="@+id/rotation_tv"
+        app:layout_constraintStart_toStartOf="@+id/rotation_tv"
+        app:layout_constraintTop_toBottomOf="@+id/rotation_tv" />
+
+    <Button
+        android:id="@+id/delete_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_marginTop="40dp"
+        android:layout_marginEnd="8dp"
+        android:layout_weight="2"
+        android:text="@string/delete"
+        android:textSize="20sp"
+        app:layout_constraintEnd_toEndOf="@+id/separators"
+        app:layout_constraintStart_toStartOf="@+id/separators"
+        app:layout_constraintTop_toBottomOf="@+id/separators" />
+
+    <com.zoniklalessimo.seatingplanner.tablePlan.EmptyTableView
+        android:id="@+id/sample_table"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/options_guide"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.498"
+        app:seatCount="2"
+        app:seatHeight="50dp"
+        app:seatWidth="60dp" />
+
+    <android.support.constraint.Guideline
+        android:id="@+id/options_guide"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_end="@dimen/side_options_width_empty_plan" />
+
+    <Button
+        android:id="@+id/apply_changes"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="@string/apply_changes"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+</android.support.constraint.ConstraintLayout>

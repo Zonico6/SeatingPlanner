@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="side_options_width">200dp</dimen>
+    <dimen name="side_options_width_empty_plan">@dimen/side_options_width</dimen>
+    <dimen name="die_options_width_full_plan">@dimen/side_options_width</dimen>
+</resources>
