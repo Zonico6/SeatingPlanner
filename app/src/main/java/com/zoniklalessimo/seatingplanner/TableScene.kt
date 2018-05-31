@@ -1,7 +1,7 @@
 package com.zoniklalessimo.seatingplanner
 
-import android.graphics.*
-import android.graphics.drawable.ColorDrawable
+import android.graphics.Color
+import android.graphics.Point
 import android.os.Build
 import android.support.constraint.ConstraintSet
 import android.util.Log
@@ -41,31 +41,31 @@ interface TableScene {
     fun EmptyTableView.tabbed(color: Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
                                             context.getColor(R.color.tableHighlight)
                                         else Color.GREEN,
-                              width: Int = 10) {
-        Log.d("fdkjasl", "This is " + this.toString())
-        // Heres the mistake: tabbedTable is still null after this assignemnt
+                              width: Int = 12) {
         tabbedTable = this
         highlight(color, width)
         slideSideOptionsIn()
     }
+
+    fun EmptyTableView.highlight(color: Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
+                                             context.getColor(R.color.tableHighlight)
+                                         else Color.GREEN,
+                                 width: Int) {
+        setPadding(width, width, width, width)
+        setBackgroundColor(color)
+    }
+
     fun EmptyTableView.resetTabbed() {
         resetHighlight()
         slideSideOptionsOut()
         tabbedTable = null
     }
 
-    fun EmptyTableView.highlight(color: Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
-                                             context.getColor(R.color.tableHighlight)
-                                         else Color.GREEN,
-                                 width: Int = 10) {
-        setPadding(width, width, width, width)
-        setBackgroundColor(color)
-    }
     fun EmptyTableView.resetHighlight() {
         setPadding(0, 0, 0, 0)
         setBackgroundColor(Color.TRANSPARENT)
     }
-    //region scene sideOptions controls
+    //endregion scene sideOptions controls
 }
 
 class TableDragShadowBuilder(view: View, val onShadowMetricsProvided: (Point, Point) -> Unit) : View.DragShadowBuilder(view) {
