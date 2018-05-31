@@ -1,17 +1,17 @@
 package com.zoniklalessimo.seatingplanner.tablePlan
 
 import android.graphics.Point
-import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.support.constraint.ConstraintSet
+import android.support.v7.app.AppCompatActivity
 import android.transition.TransitionManager
-import kotlinx.android.synthetic.main.activity_construct_empty_plan.*
-import com.zoniklalessimo.seatingplanner.R
-import com.zoniklalessimo.seatingplanner.TableScene
 import android.util.Log
 import android.view.*
 import android.view.inputmethod.EditorInfo
 import android.widget.Toast
+import com.zoniklalessimo.seatingplanner.R
+import com.zoniklalessimo.seatingplanner.TableScene
+import kotlinx.android.synthetic.main.activity_construct_empty_plan.*
 
 const val NEW_TABLE_SEAT_COUNT: Int = 4
 // TODO:
@@ -192,7 +192,7 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene {
 
     private fun updateSeparators() {
         val text = separators.text
-        tabbedTable?.assignSeperators(text)
+        tabbedTable?.assignSeparators(text)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
