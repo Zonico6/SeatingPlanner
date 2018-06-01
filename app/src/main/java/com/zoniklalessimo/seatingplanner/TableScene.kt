@@ -68,7 +68,7 @@ interface TableScene {
     //endregion scene sideOptions controls
 }
 
-class TableDragShadowBuilder(view: View, val onShadowMetricsProvided: (Point, Point) -> Unit) : View.DragShadowBuilder(view) {
+class TableDragShadowBuilder(view: View, private val onShadowMetricsProvided: (Point, Point) -> Unit) : View.DragShadowBuilder(view) {
     /* lateinit var shadowTouchPoint: Point
         private set
     lateinit var shadowSize: Point
