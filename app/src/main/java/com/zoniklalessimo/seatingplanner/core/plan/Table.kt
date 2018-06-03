@@ -1,7 +1,7 @@
 package com.zoniklalessimo.seatingplanner.core.plan
 
-import com.zoniklalessimo.seatingplanner.core.seating.StudentSet
 import com.zoniklalessimo.seatingplanner.core.seating.Student
+import com.zoniklalessimo.seatingplanner.core.seating.StudentSet
 import com.zoniklalessimo.seatingplanner.core.seating.constructStraightTable
 
 const val SEAT_WIDTH: Int = 200
@@ -96,6 +96,7 @@ open class EmptyRow(val tables: IntArray, val assignedStudents: MutableList<Stud
 
     fun constructTableRow(students: StudentSet): TableRow {
         val row = constructStraightTable(students + assignedStudents)
+        @Suppress("UNCHECKED_CAST")
         return TableRow(tables, row as Array<String?>)
     }
 }
