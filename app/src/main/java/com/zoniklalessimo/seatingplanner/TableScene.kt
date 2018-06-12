@@ -4,17 +4,17 @@ import android.graphics.Color
 import android.graphics.Point
 import android.os.Build
 import android.support.constraint.ConstraintSet
-import android.util.Log
+import android.support.constraint.Guideline
 import android.view.View
 import com.zoniklalessimo.seatingplanner.tablePlan.EmptyTableView
 
 interface TableScene {
     //region helpers
     fun ConstraintSet.connectTable(tableId: Int, guideId: Int) {
-        connect(tableId, ConstraintSet.LEFT, ConstraintSet.PARENT_ID, ConstraintSet.LEFT)
-        connect(tableId, ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP)
-        connect(tableId, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM)
-        connect(tableId, ConstraintSet.RIGHT, guideId, ConstraintSet.LEFT)
+        connect(tableId, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START, 0)
+        connect(tableId, ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP, 0)
+        connect(tableId, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM, 0)
+        connect(tableId, ConstraintSet.END, guideId, ConstraintSet.START, 0)
     }
 
     var shadowTouchPoint: Point?
@@ -27,10 +27,27 @@ interface TableScene {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             startDragAndDrop(null, dragShadow, this, 0)
         } else {
+            @Suppress("DEPRECATION")
             startDrag(null, dragShadow, this, 0)
         }
     }
     //endregion helpers
+
+    //region positioning
+    fun ConstraintSet.restoreBiases(table: View, sideGuide: Guideline, height: Float) {
+        val xBias = table.left / sideGuide.left.toFloat()
+        val yBias = table.top / height
+        connectTable(table.id, sideGuide.id)
+        setHorizontalBias(table.id, xBias)
+        setVerticalBias(table.id, yBias)
+    }
+
+    fun ConstraintSet.prepareConstraintsForDrag(table: View) {
+        clear(table.id)
+        connect(table.id, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START, table.left)
+        connect(table.id, ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP, table.left)
+    }
+    //endregion
 
     //region scene sideOptions controls
     fun slideSideOptionsIn()
@@ -69,22 +86,11 @@ interface TableScene {
 }
 
 class TableDragShadowBuilder(view: View, private val onShadowMetricsProvided: (Point, Point) -> Unit) : View.DragShadowBuilder(view) {
-    /* lateinit var shadowTouchPoint: Point
-        private set
-    lateinit var shadowSize: Point
-        private set */
 
     override fun onProvideShadowMetrics(outShadowSize: Point?, outShadowTouchPoint: Point?) {
         super.onProvideShadowMetrics(outShadowSize, outShadowTouchPoint)
         if (outShadowSize != null && outShadowTouchPoint != null) {
-            Log.d("TableDragShadowBuilder:", "Called onProvideShadowMetrics.")
             onShadowMetricsProvided(outShadowSize, outShadowTouchPoint)
         }
-        /* if (outShadowSize != null) {
-            shadowSize = outShadowSize
-        }
-        if (outShadowTouchPoint != null) {
-            shadowTouchPoint = outShadowTouchPoint
-        }*/
     }
 }
