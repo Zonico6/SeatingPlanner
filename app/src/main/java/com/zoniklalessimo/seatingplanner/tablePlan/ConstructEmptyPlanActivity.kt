@@ -12,12 +12,10 @@ import android.widget.Toast
 import com.zoniklalessimo.seatingplanner.R
 import com.zoniklalessimo.seatingplanner.TableScene
 import kotlinx.android.synthetic.main.activity_construct_empty_plan.*
+//import androidx.core.view.*
 
 const val NEW_TABLE_SEAT_COUNT: Int = 4
-// TODO:
-//      Bugs:
-//          Furthermore, When the drag shadow goes into sideOptions, the view is positioned and made visible again, but NOT hidden again -> hide view when leaving sideOptions
-//          Setting seatCount, etc. doesn't work -> Probably because the proper event doesn't fire -> Button on keyboard is not called enter but simply next
+
 class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene {
 
     companion object {
@@ -49,7 +47,18 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene {
 
         slideSideOptionsOut()
 
-        // DEBUG
+        helper_btn.setOnClickListener {
+            for (i in 0 until root.childCount) {
+                val child = root.getChildAt(i)
+                child as? EmptyTableView ?: continue
+                Log.d(TAG, "Width: " + root.width + ", child-x: " + child.x + ", child-y: " + child.y + "\nwidth: " + child.width + ", height: " + child.height)
+            }
+            /*for (child in root) {
+                // DEBUG: You can't see views once you dropped them from a drag. Set all childs visible on click, maybe you messed up and just make the views invisible on the drop
+                child.visibility = View.VISIBLE
+            }*/
+        }
+
         apply_changes.setOnClickListener {
             updateSeatCount()
             updateSeparators()
@@ -72,7 +81,7 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene {
         }
 
         //TODO
-        seat_count.setOnEditorActionListener { tv, actionId, event ->
+        seat_count.setOnEditorActionListener { _, actionId, event ->
             ifFinishedTyping(actionId, event) {
                 tabbedTable?.let {
                     updateSeatCount()
@@ -80,13 +89,13 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene {
                 } ?: false
             }
         }
-        rotation_tv.setOnEditorActionListener { tv, actionId, event ->
+        rotation_tv.setOnEditorActionListener { _, actionId, event ->
             ifFinishedTyping(actionId, event) {
                 Toast.makeText(this, "This feature isn't supported yet!", Toast.LENGTH_LONG).show()
                 false
             }
         }
-        separators.setOnEditorActionListener { tv, actionId, event ->
+        separators.setOnEditorActionListener { _, actionId, event ->
             ifFinishedTyping(actionId, event) {
                 tabbedTable?.let {
                     updateSeparators()
@@ -112,8 +121,7 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene {
         }
         //endregion scene controls
 
-        val appRes = resources
-        optionsGuideEnd = appRes.getDimension(R.dimen.side_options_width_empty_plan).toInt()
+        optionsGuideEnd = resources.getDimension(R.dimen.side_options_width_empty_plan).toInt()
 
         // Handle drag and drop events
         root.setOnDragListener { _, event ->
@@ -123,6 +131,10 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene {
                     // Hide original view
                     val draggedView = event.localState as View
                     draggedView.visibility = View.INVISIBLE
+                    /*rootConstraints.clone(root)
+                    // This should maybe moved into startTableDrag()
+                    rootConstraints.prepareConstraintsForDrag(draggedView)
+                    rootConstraints.applyTo(root)*/
                     return@setOnDragListener true
                 }
 
@@ -135,14 +147,6 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene {
                             draggedView.visibility = View.VISIBLE
                             draggedView.y = event.y - shadowTouchPoint!!.y
                             draggedView.x = (options_guide.left - draggedView.width).toFloat()
-
-                            /*if (currentToast == null) {
-                                val toast = Toast.makeText(this@ConstructEmptyPlanActivity,
-                                        this@ConstructEmptyPlanActivity.getString(R.string.cant_place_here),
-                                        Toast.LENGTH_SHORT)
-                                currentToast = toast
-                                toast.show()
-                            }*/
                         } else {
                             draggedView.visibility = View.INVISIBLE
                         }
@@ -169,12 +173,17 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene {
                 }
 
                 DragEvent.ACTION_DRAG_ENTERED,
-                DragEvent.ACTION_DRAG_EXITED,
-                DragEvent.ACTION_DRAG_ENDED -> {
+                DragEvent.ACTION_DRAG_EXITED -> {
                     // returns true; the value is ignored.
                     return@setOnDragListener true
                 }
 
+                DragEvent.ACTION_DRAG_ENDED -> {
+                    val draggedView = event.localState as View
+                    rootConstraints.clone(root)
+                    rootConstraints.restoreBiases(draggedView, options_guide, root.height.toFloat())
+                    rootConstraints.applyTo(root)
+                }
                 // An unknown action type was received.
                 else -> Log.e("DragDrop Example", "Unknown action type received by OnDragListener.")
             }
@@ -184,8 +193,8 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene {
 
     private fun updateSeatCount() {
         tabbedTable?.apply {
-            val text = seat_count.text.toString()
-            text.filter { it.isDigit() }
+            var text = seat_count.text.toString()
+            text = text.filter { it.isDigit() }
             this.seatCount = text.toInt()
         }
     }
@@ -210,9 +219,9 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene {
                 // Then store the position in bias values of the views
                 val id = addTable()
 
-                constrSet.clone(root)
-                constrSet.connectTable(id, options_guide.id)
-                constrSet.applyTo(root)
+                rootConstraints.clone(root)
+                rootConstraints.connectTable(id, options_guide.id)
+                rootConstraints.applyTo(root)
             }
             else -> return super.onOptionsItemSelected(item)
         }
@@ -222,10 +231,12 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene {
     private fun addTable(): Int {
         val table = EmptyTableView(this)
 
-        // TODO: Miscellaneous/Aesthatics
+        // TODO: Miscellaneous/Aesthetics
         table.seatCount = NEW_TABLE_SEAT_COUNT
-        table.seatWidth = sample_table.seatWidth
-        table.seatHeight = sample_table.seatHeight
+
+        table.seatWidth = resources.getDimension(R.dimen.table_seat_width)
+        table.seatHeight = resources.getDimension(R.dimen.table_seat_height)
+
         table.id = View.generateViewId()
         table.setOnClickListener {
             table.tabbed()
@@ -239,7 +250,7 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene {
     }
 
     private var optionsGuideEnd: Int = 0
-    private val constrSet = ConstraintSet()
+    private val rootConstraints = ConstraintSet()
     private var sideOptionsPresent = true
 
     private fun toggleSideOptions() {
@@ -262,14 +273,15 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene {
             e.printStackTrace()
         }
     }
+
     override fun slideSideOptionsOut() {
         if (sideOptionsPresent) {
             sideOptionsPresent = false
             TransitionManager.beginDelayedTransition(root)
             options_group.visibility = View.GONE
-            constrSet.clone(root)
-            constrSet.setGuidelineEnd(R.id.options_guide, 0)
-            constrSet.applyTo(root)
+            rootConstraints.clone(root)
+            rootConstraints.setGuidelineEnd(R.id.options_guide, 0)
+            rootConstraints.applyTo(root)
         }
     }
     override fun slideSideOptionsIn() {
@@ -278,9 +290,9 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene {
             updateSideOptionViews()
             TransitionManager.beginDelayedTransition(root)
             options_group.visibility = View.VISIBLE
-            constrSet.clone(root)
-            constrSet.setGuidelineEnd(R.id.options_guide, optionsGuideEnd)
-            constrSet.applyTo(root)
+            rootConstraints.clone(root)
+            rootConstraints.setGuidelineEnd(R.id.options_guide, optionsGuideEnd)
+            rootConstraints.applyTo(root)
         }
     }
 }
