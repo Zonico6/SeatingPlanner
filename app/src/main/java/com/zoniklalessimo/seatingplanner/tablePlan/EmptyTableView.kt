@@ -2,7 +2,10 @@ package com.zoniklalessimo.seatingplanner.tablePlan
 
 import android.content.Context
 import android.content.res.TypedArray
-import android.graphics.*
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.RectF
 import android.util.AttributeSet
 import android.util.Log
 import android.view.View
@@ -17,30 +20,14 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
             this(context, attrs, 0)
     constructor(context: Context) :
             this(context, null)
+
     companion object {
         const val LOG_TAG = "EmptyTableView"
     }
-
-    /* Set defaults here and pass them as the defaults when obtaining the attributes
-    var seatCount: Int = 1
-
-    var dividerColor: Int = Color.GRAY
-    var dividerWidth: Float = 0f
-
-    var tableBorderColor: Int = Color.GRAY
-    var borderSize: Float = 0f
-
-    var seatWidth: Float = -1f
-    var seatHeight: Float = -1f
-    var seatColor: Int = Color.BLACK
-
-    val tableWidth get() = seatWidth * seatCount
-    val tableHeight get() = seatHeight */
-
     // TODO: Add seatColors[], whose colors get cycled through when drawing the seats
     // region Attributes
 
-    // seat dimensions
+    //region Seat attributes
     var seatCount: Int = 1
         set(value) {
             field = value
@@ -59,19 +46,28 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
             invalidate()
             requestLayout()
         }
+    var seatColor: Int
+        get() = seatPaint.color
+        set(color) {
+            seatPaint.color = color
+            invalidate()
+        }
+    //endregion
 
-    // table dimensions
-    var tableCornerRadius = 15f
+    //region Table dimensions
+    var tableCornerRadius = 30f
         set(value) {
             field = value
             invalidate()
         }
     // The table's width without border and padding
-    val tableWidth get() = seatWidth * seatCount + dividerWidth * (seatCount - 1)
+    val tableWidth get(): Float = seatWidth * seatCount + partitionSpace
     // The table's height without border and padding
     val tableHeight get() = seatHeight
 
-    // divider
+    //endregion
+
+    //region Divider
     var dividerColor: Int
         get() = dividerPaint.color
         set(color) {
@@ -85,8 +81,9 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
             invalidate()
             requestLayout()
         }
+    //endregion
 
-    // separators
+    //region Separators
     var separators: SortedSet<Int> = sortedSetOf()
         set(seps) {
             val oldSize = field.size
@@ -115,6 +112,18 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
         return builder.toString()
     }
 
+    fun assignSeparators(sepsStr: CharSequence) {
+        var currentNumber = StringBuilder(2)
+        for (i in sepsStr) {
+            if (i.isDigit()) {
+                currentNumber.append(i)
+            } else if (currentNumber.isNotEmpty()) {
+                separators.add(currentNumber.toString().toInt())
+                currentNumber = StringBuilder(2)
+            }
+        }
+    }
+
     var separatorColor: Int
         get() = separatorPaint.color
         set(color) {
@@ -128,8 +137,9 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
             invalidate()
             requestLayout()
         }
+    //endregion
 
-    // tableBorder
+    //region Table border
     var tableBorderColor: Int
         get() = tableBorderPaint.color
         set(color) {
@@ -143,13 +153,20 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
             invalidate()
             requestLayout()
         }
+    //endregion
 
-    var seatColor: Int
-        get() = seatPaint.color
-        set(color) {
-            seatPaint.color = color
-            invalidate()
+    //region Miscellaneous
+    private val partitionSpace: Float
+        get(): Float {
+            val sepCount = separators.size
+            return sepCount * separatorWidth + dividerWidth * (seatCount - sepCount - 1)
         }
+
+    private val horizontalFrame: Int
+        get() = paddingRight + paddingLeft + borderSize.toInt() * 2
+    private val verticalFrame: Int
+        get() = paddingTop + paddingBottom + borderSize.toInt() * 2
+    //endregion
 
     //endregion Attributes
 
@@ -204,67 +221,87 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
         tableBorderPaint.color = tableBorderColor
     }
 
-    fun assignSeparators(sepsStr: CharSequence) {
-        var currentNumber = StringBuilder(2)
-        for (i in sepsStr) {
-            if (i.isDigit()) {
-                currentNumber.append(i)
-            } else if (currentNumber.isNotEmpty()) {
-                separators.add(currentNumber.toString().toInt())
-                currentNumber = StringBuilder(2)
-            }
-        }
-    }
-
     override fun postInvalidate() {
         super.postInvalidate()
 
         updateShapes()
     }
 
-    private fun updateSeatWidth(measureSpec: Int) {
-        val requestedWidth = MeasureSpec.getSize(measureSpec) - borderSize * 2
+    //region Measuring
+    /**
+     * @return The desired width without border and padding
+     */
+    private fun desiredTableWidth(measureSpec: Int): Int {
+        val size = MeasureSpec.getSize(measureSpec)
+        val mode = MeasureSpec.getMode(measureSpec)
 
-        // AT_MOST: match_parent
-        if (MeasureSpec.getMode(measureSpec) == MeasureSpec.AT_MOST) {
+        Log.d(LOG_TAG, MeasureSpec.toString(mode))
+
+        // Size == 0 would mess things up, so if that's present, return and leave seatWidth
+        if (size == 0) {
+            if (seatWidth == -1f) { // Size of measureSpec 0, seatWidth -1 -> No way of telling the size
+                Log.e(LOG_TAG, "MeasureSpec->size and seatWidth both have placeholder values " +
+                        "so determining a size isn't possible.")
+            }
+            return tableWidth.toInt()
+        }
+
+        var requestedWidth = size - borderSize * 2 - paddingLeft - paddingRight
+
+        // AT_MOST: wrap_content
+        if (mode == MeasureSpec.AT_MOST) {
             if (seatWidth == -1f) {
-                Log.w(LOG_TAG,
-                        "MeasureSpec was \'AT_MOST\', which requires seatWidth to be set." +
+                Log.w(LOG_TAG, "MeasureSpec was \'AT_MOST\', which requires seatWidth to be set." +
                                 "However it wasn't so \'EXACTLY\' was used instead.")
             } else {
-                val receivedTableWidth = seatWidth * seatCount + dividerWidth * (seatCount - 1)
-                val resolvedWidth = Math.min(receivedTableWidth, requestedWidth)
-                seatWidth = resolvedWidth / seatCount
-                return
+                requestedWidth = Math.min(tableWidth, requestedWidth)
             }
         }
-        seatWidth = (requestedWidth - dividerWidth * (seatCount - 1)) / seatCount
+        return requestedWidth.toInt()
+        //seatWidth = (requestedWidth - partitionSpace) / seatCount
     }
-    private fun updateSeatHeight(measureSpec: Int) {
-        val requestedHeight = MeasureSpec.getSize(measureSpec) - borderSize * 2
-        if (MeasureSpec.getMode(measureSpec) == MeasureSpec.AT_MOST) {
+
+    /**
+     * @return The desired height without border and padding
+     */
+    private fun desiredTableHeight(measureSpec: Int): Int {
+        val size = MeasureSpec.getSize(measureSpec)
+        val mode = MeasureSpec.getMode(measureSpec)
+
+        // Size == 0 would mess things up, so if that's present, return and leave seatHeight
+        if (size == 0) {
+            if (seatHeight == -1f) { // Size of measureSpec 0, seatWidth -1 -> No way of telling the size
+                Log.e(LOG_TAG, "MeasureSpec->size and seatHeight both have placeholder values " +
+                        "so determining a size isn't possible.")
+            }
+            return tableHeight.toInt()
+        }
+
+        val desiredHeight = size - borderSize * 2
+
+        if (mode == MeasureSpec.AT_MOST) {
             if (seatHeight == -1f) {
                 Log.w(LOG_TAG,
                         "MeasureSpec was \'AT_MOST\', which requires seatHeight to be set." +
                                 "However it wasn't so \'EXACTLY\' was used instead.")
             } else {
-                seatHeight = Math.min(seatHeight, requestedHeight)
-                return
+                return Math.min(seatHeight, desiredHeight).toInt()
             }
         }
-        seatHeight = requestedHeight
+        return desiredHeight.toInt()
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        // Width
-        updateSeatWidth(widthMeasureSpec)
-        updateSeatHeight(heightMeasureSpec)
+        setMeasuredDimension(
+                desiredTableWidth(widthMeasureSpec) + horizontalFrame,
+                desiredTableHeight(heightMeasureSpec) + verticalFrame)
+    }
+
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        seatWidth = (w - horizontalFrame - partitionSpace) / seatCount
+        seatHeight = h - verticalFrame + 0.0f
 
         updateShapes()
-
-        setMeasuredDimension(
-                tableWidth.toInt() + paddingRight + paddingLeft + borderSize.toInt() * 2,
-                tableHeight.toInt() + paddingTop + paddingBottom + borderSize.toInt() * 2)
     }
 
     private fun updateShapes() {
@@ -279,6 +316,9 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
         tableRect = RectF(x2, y2, x2 + tableWidth, y2 + tableHeight)
     }
 
+    //endregion
+
+    //region Drawing
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
         if (canvas == null) return
@@ -294,7 +334,7 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
         }
     }
 
-    private fun prior(index: Int): Float {
+    private fun priorArea(index: Int): Float {
         var seps = 0
         for (i in separators) {
             if (i < index)
@@ -306,14 +346,15 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
     }
 
     private fun Canvas.drawDivider(index: Int) =
-            drawPartition(prior(index), dividerWidth, dividerPaint)
+            drawPartition(priorArea(index), dividerWidth, dividerPaint)
 
     private fun Canvas.drawSeparator(index: Int) =
-            drawPartition(prior(index), separatorWidth, separatorPaint)
+            drawPartition(priorArea(index), separatorWidth, separatorPaint)
 
     private fun Canvas.drawPartition(priorWidth: Float, width: Float, paint: Paint) {
         val x = paddingLeft + borderSize + priorWidth
         val y = paddingTop.toFloat() + borderSize
         drawRect(x, y, x + width, y + seatHeight, paint)
     }
+    //endregion
 }
