@@ -34,18 +34,24 @@ interface TableScene {
     //endregion helpers
 
     //region positioning
-    fun ConstraintSet.restoreBiases(table: View, sideGuide: Guideline, height: Float) {
-        val xBias = table.left / sideGuide.left.toFloat()
-        val yBias = table.top / height
-        connectTable(table.id, sideGuide.id)
-        setHorizontalBias(table.id, xBias)
-        setVerticalBias(table.id, yBias)
-    }
-
     fun ConstraintSet.prepareConstraintsForDrag(table: View) {
         clear(table.id)
         connect(table.id, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START, table.left)
-        connect(table.id, ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP, table.left)
+        connect(table.id, ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP, table.top)
+    }
+
+    fun ConstraintSet.restoreBiases(table: View, sideGuide: Guideline, height: Float) {
+        val xBias = table.x / (sideGuide.left - table.width).toFloat()
+        val yBias = table.y / (height - table.height)
+
+        center(table.id, ConstraintSet.PARENT_ID, ConstraintSet.START, 0,
+                sideGuide.id, ConstraintSet.START, 0, xBias)
+        center(table.id, ConstraintSet.PARENT_ID, ConstraintSet.TOP, 0,
+                ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM, 0, yBias)
+        /*clear(table.id)
+        connectTable(table.id, sideGuide.id)
+        setHorizontalBias(table.id, xBias)
+        setVerticalBias(table.id, yBias)*/
     }
     //endregion
 
@@ -64,6 +70,12 @@ interface TableScene {
         slideSideOptionsIn()
     }
 
+    fun EmptyTableView.resetTabbed() {
+        resetHighlight()
+        slideSideOptionsOut()
+        tabbedTable = null
+    }
+
     fun EmptyTableView.highlight(color: Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
                                              context.getColor(R.color.tableHighlight)
                                          else Color.GREEN,
@@ -72,16 +84,12 @@ interface TableScene {
         setBackgroundColor(color)
     }
 
-    fun EmptyTableView.resetTabbed() {
-        resetHighlight()
-        slideSideOptionsOut()
-        tabbedTable = null
-    }
-
     fun EmptyTableView.resetHighlight() {
         setPadding(0, 0, 0, 0)
         setBackgroundColor(Color.TRANSPARENT)
     }
+
+    fun EmptyTableView.isHighlighted() = paddingLeft < 0
     //endregion scene sideOptions controls
 }
 
