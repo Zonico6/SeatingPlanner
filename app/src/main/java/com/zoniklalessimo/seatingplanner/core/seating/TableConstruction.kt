@@ -1,7 +1,5 @@
 package com.zoniklalessimo.seatingplanner.core.seating
 
-import com.zoniklalessimo.seatingplanner.core.seating.StudentSet
-
 typealias MutableRow = MutableList<String>
 typealias Row = List<String>
 
