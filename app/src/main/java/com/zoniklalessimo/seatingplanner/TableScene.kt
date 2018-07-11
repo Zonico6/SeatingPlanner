@@ -48,10 +48,10 @@ interface TableScene {
                 sideGuide.id, ConstraintSet.START, 0, xBias)
         center(table.id, ConstraintSet.PARENT_ID, ConstraintSet.TOP, 0,
                 ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM, 0, yBias)
-        /*clear(table.id)
-        connectTable(table.id, sideGuide.id)
-        setHorizontalBias(table.id, xBias)
-        setVerticalBias(table.id, yBias)*/
+
+        // Prevent view from inflating to screen size
+        constrainWidth(table.id, table.measuredWidth)
+        constrainHeight(table.id, table.measuredHeight)
     }
     //endregion
 

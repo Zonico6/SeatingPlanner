@@ -49,7 +49,6 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene {
         slideSideOptionsOut()
 
         helper_btn.setOnClickListener {
-            sample_table.minimumWidth = 368
             Log.d(LOG_TAG, "translation x: " + sample_table.translationX + ", y: " + sample_table.translationY)
             if (sample_table.x == sample_table.translationX) {
                 Log.d(LOG_TAG, "x and translationX are the same: " + sample_table.x)
@@ -59,16 +58,6 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene {
             Log.d(LOG_TAG, "sample_table: width: " + sample_table.width + ", height: " + sample_table.height)
             Log.d(LOG_TAG, "sample_table.left = " + sample_table.left + ", sample_table.x = " + sample_table.x)
             Log.d(LOG_TAG, "sample_table-seatSizes: w=" + sample_table.seatWidth + ", h=" + sample_table.seatHeight)
-            /*for (i in 0 until root.childCount) {
-                val child = root.getChildAt(i)
-                child as? EmptyTableView ?: continue
-                Log.d(LOG_TAG, "Layout width: " + root.width + ", child-x: " + child.x + ", child-y: " + child.y + "\nwidth: " + child.width + ", height: " + child.height)
-            }*/
-
-            /*for (child in root) {
-                // DEBUG: You can't see views once you dropped them from a drag. Set all childs visible on click, maybe you messed up and just make the views invisible on the drop
-                child.visibility = View.VISIBLE
-            }*/
         }
 
         apply_changes.setOnClickListener {
@@ -143,9 +132,7 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene {
                 DragEvent.ACTION_DRAG_STARTED -> {
                     // Hide original view
                     val draggedView = event.localState as View
-                    //TODO: decomment this line; btw when draggedView is highlighted it is
-                    //draggedView.visibility = View.INVISIBLE
-                    // Maybe this should be moved to startTableDrag()
+                    draggedView.visibility = View.INVISIBLE
                     rootConstraints.modify ({
                         prepareConstraintsForDrag(draggedView)
                     })
@@ -194,18 +181,15 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene {
                 DragEvent.ACTION_DRAG_ENDED -> {
                     shadowTouchPoint = null
                     val draggedView = event.localState as View
-                    with(draggedView) {
-                        visibility = View.VISIBLE
-                        rootConstraints.modify({
-                            setMargin(id, ConstraintSet.START, x.toInt())
-                            setMargin(id, ConstraintSet.TOP, y.toInt())
-                        })
-                        translationX = 0f
-                        translationY = 0f
-                    }
+
+                    draggedView.visibility = View.VISIBLE
+
                     rootConstraints.modify ({
                         restoreBiases(draggedView, options_guide, root.height.toFloat())
                     })
+                    // Synchronize x and y with layout position
+                    draggedView.translationX = 0f
+                    draggedView.translationY = 0f
                 }
                 // An unknown action type was received.
                 else -> Log.e("DragDrop Example", "Unknown action type received by OnDragListener.")

@@ -234,6 +234,7 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
     private fun desiredTableWidth(measureSpec: Int): Int {
         val size = MeasureSpec.getSize(measureSpec)
         val mode = MeasureSpec.getMode(measureSpec)
+        // Problem is that mode is exactly and size the entire screen width -> table width also screen
 
         Log.d(LOG_TAG, MeasureSpec.toString(mode))
 
@@ -292,9 +293,10 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        setMeasuredDimension(
-                desiredTableWidth(widthMeasureSpec) + horizontalFrame,
-                desiredTableHeight(heightMeasureSpec) + verticalFrame)
+        val w = desiredTableWidth(widthMeasureSpec) + horizontalFrame
+        val h = desiredTableHeight(heightMeasureSpec) + verticalFrame
+
+        setMeasuredDimension(w, h)
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
