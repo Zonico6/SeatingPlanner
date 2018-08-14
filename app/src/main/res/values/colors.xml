@@ -4,5 +4,6 @@
     <color name="colorPrimaryDark">#00574B</color>
     <color name="colorAccent">#D81B60</color>
     
-    <color name="tableHighlight">#b750ec20</color>
+    <color name="tableTabbedHighlight">#205aec</color>
+    <color name="tableMoveHighlight">#c42213</color>
 </resources>

@@ -66,6 +66,7 @@
         app:layout_constraintStart_toStartOf="@+id/separators"
         app:layout_constraintTop_toBottomOf="@+id/separators" />
 
+    <!--
     <com.zoniklalessimo.seatingplanner.tablePlan.EmptyTableView
         android:id="@+id/sample_table"
         android:layout_width="wrap_content"
@@ -77,6 +78,7 @@
         app:seatCount="3"
         app:seatHeight="@dimen/table_seat_height"
         app:seatWidth="@dimen/table_seat_width" />
+    -->
 
     <android.support.constraint.Guideline
         android:id="@+id/options_guide"
