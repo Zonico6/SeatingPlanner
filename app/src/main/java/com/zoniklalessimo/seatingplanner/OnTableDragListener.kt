@@ -10,6 +10,9 @@ import android.view.DragEvent
 import android.view.View
 import com.zoniklalessimo.seatingplanner.tablePlan.EmptyTableView
 
+// TODO: Embed setting in android preference api
+const val MOVE_TABLE_ON_ROW_BUILT = true
+
 data class DisplacementInformation(
         val involved: MutableList<Pair<Int, PointF>>,
         var joinedRect: RectF?,
@@ -30,6 +33,7 @@ interface OnTableDragListener : View.OnDragListener, TableScene {
 
     override fun onDrag(root: View?, event: DragEvent): Boolean {
         // Make sure that root is not null and smart cast it to ConstraintLayout
+        @Suppress("CAST_NEVER_SUCCEEDS")
         (root as? ConstraintLayout)?.let { _ ->
 
             val indicator = event.localState as EmptyTableView
@@ -66,8 +70,10 @@ interface OnTableDragListener : View.OnDragListener, TableScene {
                     new.width / 2f
                 }
 
-                for ((id, _) in displaceInfo!!.involved) {
-                    root.getViewById(id).x += offset
+                if (MOVE_TABLE_ON_ROW_BUILT) {
+                    for ((id, _) in displaceInfo!!.involved) {
+                        root.getViewById(id).x += offset
+                    }
                 }
 
                 base.offset(offset, 0f)
@@ -142,11 +148,13 @@ interface OnTableDragListener : View.OnDragListener, TableScene {
                                 displaceInfo!!.involved.add(indicator.id to PointF(indicator.x, indicator.y))
                                 val newX = if (shadowRect.centerX() < adjacent.center.x) {
                                     displaceInfo!!.involved.add(adjacent.id to PointF(adjacent.x, adjacent.y))
-                                    adjacent.x += indicator.width / 2
+                                    if (MOVE_TABLE_ON_ROW_BUILT)
+                                        adjacent.x += indicator.width / 2
                                     adjacent.x - indicator.width
                                 } else {
                                     displaceInfo!!.involved.add(0, adjacent.id to PointF(adjacent.x, adjacent.y))
-                                    adjacent.x -= indicator.width / 2
+                                    if (MOVE_TABLE_ON_ROW_BUILT)
+                                        adjacent.x -= indicator.width / 2
                                     adjacent.x + adjacent.width
                                 }
                                 displaceIndicator(newX, adjacent.y)
