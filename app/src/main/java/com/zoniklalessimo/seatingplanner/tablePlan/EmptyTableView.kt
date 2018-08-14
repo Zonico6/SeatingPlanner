@@ -10,10 +10,12 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.View
 import com.zoniklalessimo.seatingplanner.R
+import com.zoniklalessimo.seatingplanner.Table
+import com.zoniklalessimo.seatingplanner.assignSeparators
 import java.util.*
 
 open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int) :
-        View(context, attrs, defStyleAttr, defStyleRes) {
+        View(context, attrs, defStyleAttr, defStyleRes), Table {
     constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
             this(context, attrs, defStyleAttr, 0)
     constructor(context: Context, attrs: AttributeSet?) :
@@ -28,7 +30,7 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
     // region Attributes
 
     //region Seat attributes
-    var seatCount: Int = 1
+    final override var seatCount: Int = 1
         set(value) {
             field = value
             invalidate()
@@ -55,7 +57,7 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
     //endregion
 
     //region Table dimensions
-    var tableCornerRadius = 30f
+    var cornerRadius = 30f
         set(value) {
             field = value
             invalidate()
@@ -84,7 +86,7 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
     //endregion
 
     //region Separators
-    var separators: SortedSet<Int> = sortedSetOf()
+    override var separators: SortedSet<Int> = sortedSetOf()
         set(seps) {
             val oldSize = field.size
             field = seps
@@ -92,37 +94,6 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
             if (separatorWidth != dividerWidth && oldSize != seps.size)
                 requestLayout()
         }
-    fun separatorString(concatenate: String): String {
-        val builder = StringBuilder((separators.size - 1) * concatenate.length + 1)
-        for (i in separators) {
-            builder.append(concatenate).append(i)
-        }
-        builder.deleteCharAt(0)
-        return builder.toString()
-    }
-    fun separatorString(concatenate: Char = ','): String {
-        if (separators.isEmpty()) return String()
-
-        val builder = StringBuilder(separators.size * 2 - 1)
-        for (i in separators) {
-            builder.append(concatenate).append(i)
-        }
-
-        builder.deleteCharAt(0)
-        return builder.toString()
-    }
-
-    fun assignSeparators(sepsStr: CharSequence) {
-        var currentNumber = StringBuilder(2)
-        for (i in sepsStr) {
-            if (i.isDigit()) {
-                currentNumber.append(i)
-            } else if (currentNumber.isNotEmpty()) {
-                separators.add(currentNumber.toString().toInt())
-                currentNumber = StringBuilder(2)
-            }
-        }
-    }
 
     var separatorColor: Int
         get() = separatorPaint.color
@@ -140,19 +111,39 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
     //endregion
 
     //region Table border
-    var tableBorderColor: Int
-        get() = tableBorderPaint.color
+    /**
+     * The color of the border.
+     * For retrieving the displayed color, after applying the highlight, call displayedBorderColor()
+     */
+    var borderColor: Int = Color.GRAY
         set(color) {
-            tableBorderPaint.color = color
-            invalidate()
+            field = color
+            updateBorderPaintColor()
         }
     var borderSize: Float
-        get() = tableBorderPaint.strokeWidth
+        get() = borderPaint.strokeWidth
         set(width) {
-            tableBorderPaint.strokeWidth = width
+            borderPaint.strokeWidth = width
             invalidate()
             requestLayout()
         }
+    //endregion
+
+    //region Highlighting
+    var highlightColor: Int? = null
+        private set(value) {
+            field = value
+            updateBorderPaintColor()
+        }
+
+    fun highlight(color: Int) {
+        highlightColor = color
+    }
+    fun resetHighlight() {
+        highlightColor = null
+    }
+    val isHighlighted
+        get() = highlightColor != null
     //endregion
 
     //region Miscellaneous
@@ -172,14 +163,23 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
 
     //region paints
 
-    private var tableBorderPaint = Paint()
+    private var borderPaint = Paint()
     private var seatPaint: Paint = Paint()
     private var dividerPaint: Paint = Paint()
     private var separatorPaint: Paint = Paint()
 
+    private fun updateBorderPaintColor() {
+        val oldColor = borderPaint.color
+        borderPaint.color = highlightColor ?: borderColor
+        // (borderColor + highlightColor) / 2
+        // (sqrt((borderColor * borderColor + highlightColor * highlightColor) * 0.5)).roundToInt()
+        if (oldColor != borderPaint.color)
+            invalidate()
+    }
+
     //endregion paints
 
-    //region shapes
+    //region shape
 
     private lateinit var tableBorderRect: RectF
     private lateinit var tableRect: RectF
@@ -203,10 +203,10 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
 
             assignSeparators(a.getString(R.styleable.EmptyTableView_separators) ?: "")
 
-            tableBorderColor = a.getColor(R.styleable.EmptyTableView_borderColor,     Color.GRAY)
+            borderColor = a.getColor(R.styleable.EmptyTableView_borderColor,     borderColor)
             borderSize = a.getDimension(R.styleable.EmptyTableView_borderWidth, 0f)
 
-            tableCornerRadius = a.getDimension(R.styleable.EmptyTableView_cornerRadius, tableCornerRadius)
+            cornerRadius = a.getDimension(R.styleable.EmptyTableView_cornerRadius, cornerRadius)
         } finally {
             a.recycle()
         }
@@ -217,8 +217,8 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
 
         seatPaint.color = seatColor
 
-        tableBorderPaint.style = Paint.Style.STROKE
-        tableBorderPaint.color = tableBorderColor
+        borderPaint.style = Paint.Style.STROKE
+        borderPaint.color = borderColor
     }
 
     override fun postInvalidate() {
@@ -234,9 +234,6 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
     private fun desiredTableWidth(measureSpec: Int): Int {
         val size = MeasureSpec.getSize(measureSpec)
         val mode = MeasureSpec.getMode(measureSpec)
-        // Problem is that mode is exactly and size the entire screen width -> table width also screen
-
-        Log.d(LOG_TAG, MeasureSpec.toString(mode))
 
         // Size == 0 would mess things up, so if that's present, return and leave seatWidth
         if (size == 0) {
@@ -247,7 +244,7 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
             return tableWidth.toInt()
         }
 
-        var requestedWidth = size - borderSize * 2 - paddingLeft - paddingRight
+        var requestedWidth = (size - horizontalFrame).toFloat()
 
         // AT_MOST: wrap_content
         if (mode == MeasureSpec.AT_MOST) {
@@ -278,13 +275,13 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
             return tableHeight.toInt()
         }
 
-        val desiredHeight = size - borderSize * 2
+        val desiredHeight = (size - verticalFrame).toFloat()
 
         if (mode == MeasureSpec.AT_MOST) {
             if (seatHeight == -1f) {
                 Log.w(LOG_TAG,
-                        "MeasureSpec was \'AT_MOST\', which requires seatHeight to be set." +
-                                "However it wasn't so \'EXACTLY\' was used instead.")
+                        "MeasureSpec was \'AT_MOST\'. Since seatHeight was not set, " +
+                                "\'EXACTLY\' was used instead.")
             } else {
                 return Math.min(seatHeight, desiredHeight).toInt()
             }
@@ -326,7 +323,7 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
         if (canvas == null) return
 
         canvas.drawRect(tableRect, seatPaint)
-        canvas.drawRoundRect(tableBorderRect, tableCornerRadius, tableCornerRadius, tableBorderPaint)
+        canvas.drawRoundRect(tableBorderRect, cornerRadius, cornerRadius, borderPaint)
 
         for (i in 1 until seatCount) {
             if (separators.contains(i))
