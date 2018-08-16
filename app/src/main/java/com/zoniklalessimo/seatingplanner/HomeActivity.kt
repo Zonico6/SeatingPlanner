@@ -1,10 +1,9 @@
 package com.zoniklalessimo.seatingplanner
 
 import android.content.Intent
-import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
 import com.zoniklalessimo.seatingplanner.tablePlan.ConstructEmptyPlanActivity
-import com.zoniklalessimo.seatingplanner.tablePlan.EmptyTableView
 import kotlinx.android.synthetic.main.activity_home.*
 
 class HomeActivity : AppCompatActivity() {

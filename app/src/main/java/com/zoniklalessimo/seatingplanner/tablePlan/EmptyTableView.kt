@@ -1,5 +1,6 @@
 package com.zoniklalessimo.seatingplanner.tablePlan
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.TypedArray
 import android.graphics.Canvas
@@ -8,6 +9,7 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.util.AttributeSet
 import android.util.Log
+import android.view.MotionEvent
 import android.view.View
 import com.zoniklalessimo.seatingplanner.R
 import com.zoniklalessimo.seatingplanner.Table
@@ -18,8 +20,10 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
         View(context, attrs, defStyleAttr, defStyleRes), Table {
     constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
             this(context, attrs, defStyleAttr, 0)
+
     constructor(context: Context, attrs: AttributeSet?) :
             this(context, attrs, 0)
+
     constructor(context: Context) :
             this(context, null)
 
@@ -139,9 +143,11 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
     fun highlight(color: Int) {
         highlightColor = color
     }
+
     fun resetHighlight() {
         highlightColor = null
     }
+
     val isHighlighted
         get() = highlightColor != null
     //endregion
@@ -153,9 +159,9 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
             return sepCount * separatorWidth + dividerWidth * (seatCount - sepCount - 1)
         }
 
-    private val horizontalFrame: Int
+    val horizontalFrame: Int
         get() = paddingRight + paddingLeft + borderSize.toInt() * 2
-    private val verticalFrame: Int
+    val verticalFrame: Int
         get() = paddingTop + paddingBottom + borderSize.toInt() * 2
     //endregion
 
@@ -190,20 +196,20 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
         val a: TypedArray = context.theme.obtainStyledAttributes(attrs, R.styleable.EmptyTableView, defStyleAttr, defStyleRes)
 
         try {
-            seatCount = a.getInteger(R.styleable.EmptyTableView_seatCount,          seatCount)
-            seatWidth = a.getDimension(R.styleable.EmptyTableView_seatWidth,        seatWidth)
-            seatHeight = a.getDimension(R.styleable.EmptyTableView_seatHeight,      seatHeight)
-            seatColor = a.getInt(R.styleable.EmptyTableView_seatColor,              Color.DKGRAY)
+            seatCount = a.getInteger(R.styleable.EmptyTableView_seatCount, seatCount)
+            seatWidth = a.getDimension(R.styleable.EmptyTableView_seatWidth, seatWidth)
+            seatHeight = a.getDimension(R.styleable.EmptyTableView_seatHeight, seatHeight)
+            seatColor = a.getInt(R.styleable.EmptyTableView_seatColor, Color.DKGRAY)
 
-            dividerColor = a.getColor(R.styleable.EmptyTableView_dividerColor,      Color.GRAY)
-            dividerWidth = a.getDimension(R.styleable.EmptyTableView_dividerWidth,  4f)
+            dividerColor = a.getColor(R.styleable.EmptyTableView_dividerColor, Color.GRAY)
+            dividerWidth = a.getDimension(R.styleable.EmptyTableView_dividerWidth, 4f)
 
-            separatorColor = a.getColor(R.styleable.EmptyTableView_separatorColor,  Color.BLACK)
-            separatorWidth = a.getDimension(R.styleable.EmptyTableView_separatorWidth,  0f)
+            separatorColor = a.getColor(R.styleable.EmptyTableView_separatorColor, Color.BLACK)
+            separatorWidth = a.getDimension(R.styleable.EmptyTableView_separatorWidth, 0f)
 
             assignSeparators(a.getString(R.styleable.EmptyTableView_separators) ?: "")
 
-            borderColor = a.getColor(R.styleable.EmptyTableView_borderColor,     borderColor)
+            borderColor = a.getColor(R.styleable.EmptyTableView_borderColor, borderColor)
             borderSize = a.getDimension(R.styleable.EmptyTableView_borderWidth, 0f)
 
             cornerRadius = a.getDimension(R.styleable.EmptyTableView_cornerRadius, cornerRadius)
@@ -219,6 +225,11 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
 
         borderPaint.style = Paint.Style.STROKE
         borderPaint.color = borderColor
+    }
+
+    fun set(value: Table) {
+        seatCount = value.seatCount
+        separators = value.separators
     }
 
     override fun postInvalidate() {
@@ -250,7 +261,7 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
         if (mode == MeasureSpec.AT_MOST) {
             if (seatWidth == -1f) {
                 Log.w(LOG_TAG, "MeasureSpec was \'AT_MOST\', which requires seatWidth to be set." +
-                                "However it wasn't so \'EXACTLY\' was used instead.")
+                        "However it wasn't so \'EXACTLY\' was used instead.")
             } else {
                 requestedWidth = Math.min(tableWidth, requestedWidth)
             }
@@ -354,6 +365,20 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
         val x = paddingLeft + borderSize + priorWidth
         val y = paddingTop.toFloat() + borderSize
         drawRect(x, y, x + width, y + seatHeight, paint)
+    }
+    //endregion
+
+    var touchedSeat = -1
+        private set
+
+    @SuppressLint("ClickableViewAccessibility")
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        touchedSeat = when (event.action) {
+            MotionEvent.ACTION_DOWN -> (event.x / width * seatCount).toInt()
+            MotionEvent.ACTION_UP -> -1
+            else -> touchedSeat
+        }
+        return super.onTouchEvent(event)
     }
     //endregion
 }

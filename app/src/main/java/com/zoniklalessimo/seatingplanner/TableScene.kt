@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package com.zoniklalessimo.seatingplanner
 
 import android.graphics.Point
@@ -13,6 +11,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.zoniklalessimo.seatingplanner.tablePlan.EmptyTableView
+import java.util.*
 import kotlin.experimental.and
 import kotlin.experimental.or
 import kotlin.experimental.xor
@@ -20,15 +19,15 @@ import kotlin.math.sqrt
 
 interface TableScene {
     companion object {
-        const val LOG_TAG = "TableScene: "
+        const val LOG_TAG = "TableScene"
     }
 
     //region helpers
-    fun ConstraintSet.connectTable(tableId: Int, guideId: Int) {
-        connect(tableId, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START, 0)
-        connect(tableId, ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP, 0)
-        connect(tableId, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM, 0)
-        connect(tableId, ConstraintSet.END, guideId, ConstraintSet.START, 0)
+    fun ConstraintSet.connectTable(tableId: Int, guideId: Int, xBias: Float = 0.5f, yBias: Float = 0.5f) {
+        center(tableId, ConstraintSet.PARENT_ID, ConstraintSet.START, 0,
+                guideId, ConstraintSet.START, 0, xBias)
+        center(tableId, ConstraintSet.PARENT_ID, ConstraintSet.TOP, 0,
+                ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM, 0, yBias)
     }
 
     var shadowTouchPoint: Point?
@@ -46,7 +45,18 @@ interface TableScene {
         }
     }
 
-    fun spawnTable(root: ViewGroup, inflater: LayoutInflater): Int {
+    /**
+     * Add a table at the given position
+     *
+     * @param table The table, that's gonna be added
+     * @param x The horizontal bias. If negative, it is interpreted as the absolute position.
+     * @param y The vertical bias. If negative, it is interpreted as the absolute position.
+     *
+     * @return The id of the created table.
+     */
+    fun addTable(table: EmptyTableView, x: Float = 0.5f, y: Float = 0.5f): Int
+
+    fun spawnTable(root: ViewGroup, inflater: LayoutInflater): EmptyTableView {
         val table = inflater.inflate(R.layout.empty_table_dark, root, false) as EmptyTableView
 
         table.id = View.generateViewId()
@@ -63,12 +73,48 @@ interface TableScene {
             }
         }
         //Dragging
-        table.setOnLongClickListener {
+        table.setOnLongClickListener { _ ->
+            val seat = table.touchedSeat
+
+            if (table.actionState().equals(TableScene.ActionState.MOVABLE) && seat != -1) {
+                fun makeNewTable(seatCount: Int, separators: SortedSet<Int>, xOffset: Float): Int {
+                    val newTable = spawnTable(root, inflater)
+                    newTable.setTag(R.id.drag_disabled, true)
+
+                    newTable.seatCount = seatCount
+                    newTable.separators = separators
+
+                    // Negative so addTable() proceeds with it as absolute coordinates and not biases
+                    return addTable(newTable, -table.left - xOffset, -table.top + 0f)
+                }
+
+                // First is the new table AFTER the touch
+                var sep = table.separatorAfterSeat(seat)
+                if (sep != table.seatCount) {
+                    makeNewTable(table.seatCount - sep,
+                            table.separatorsFromSeat(seat), sep * table.seatWidth)
+                }
+
+                // Then the table BEFORE it
+                sep = table.separatorBeforeSeat(seat)
+                if (sep != 0) {
+                    makeNewTable(sep, table.separatorsToSeat(seat), 0f)
+                }
+
+                table.seatCount = table.sectionAround(seat)
+                table.clearSeparators()
+
+                // This fixes the shadow in that it's the appropriate size, however it screws the table's
+                // size after it's been placed to be as big as the entire table before the split up
+                // val left = table.left + sep * table.seatWidth.toInt()
+                // table.layout(left, table.top,
+                //        left + table.tableWidth.toInt() + table.horizontalFrame, table.bottom)
+            }
             table.startTableDrag()
             true
         }
         root.addView(table)
-        return table.id
+        return table
     }
 
     fun ConstraintSet.modify(modifications: ConstraintSet.() -> Unit, layout: ConstraintLayout) {
@@ -80,8 +126,7 @@ interface TableScene {
     /**
      * The bounding rectangle of this view.
      */
-    val View.frame
-        get() = RectF(x, y, x + width, y + height)
+    fun View.frame() = RectF(x, y, x + width, y + height)
 
     /**
      * The point at the center of the view after accounting for translation.
@@ -96,15 +141,20 @@ interface TableScene {
     //endregion helpers
 
     //region positioning
-    fun ConstraintSet.prepareConstraintsForDrag(table: View) {
+    fun ConstraintSet.prepareConstraintsForDrag(table: EmptyTableView) {
         clear(table.id)
         connect(table.id, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START, table.left)
         connect(table.id, ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP, table.top)
     }
 
-    fun ConstraintSet.restoreBiases(table: View, sideGuide: Guideline, height: Float) {
-        val xBias = table.x / (sideGuide.left - table.width).toFloat()
-        val yBias = table.y / (height - table.height)
+    fun ConstraintSet.restoreBiases(table: EmptyTableView, sideGuide: Guideline, height: Float) {
+        var xBias = table.x / (sideGuide.left - table.width).toFloat()
+        var yBias = table.y / (height - table.height)
+
+        // Make sure biases are between 0 and 1
+        xBias = Math.min(Math.max(xBias, 0.0000000000001f), 0.999999999999f)
+        yBias = Math.min(Math.max(yBias, 0.0000000000001f), 0.999999999999f)
+
 
         center(table.id, ConstraintSet.PARENT_ID, ConstraintSet.START, 0,
                 sideGuide.id, ConstraintSet.START, 0, xBias)
@@ -112,8 +162,8 @@ interface TableScene {
                 ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM, 0, yBias)
 
         // Prevent view from inflating to screen size
-        constrainWidth(table.id, table.measuredWidth)
-        constrainHeight(table.id, table.measuredHeight)
+        constrainWidth(table.id, table.tableWidth.toInt() + table.horizontalFrame)
+        constrainHeight(table.id, table.tableHeight.toInt() + table.verticalFrame)
     }
     //endregion
 
@@ -152,7 +202,7 @@ interface TableScene {
     //region Movable
     var movableTable: EmptyTableView?
 
-    fun EmptyTableView.setMovable(color: Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+    fun EmptyTableView.setMovable(@Suppress("DEPRECATION") color: Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
                                                 context.getColor(R.color.tableMoveHighlight) else
                                                 resources.getColor(R.color.tableMoveHighlight), resetOthers: Boolean = true) {
         if (resetOthers) {
@@ -208,7 +258,9 @@ interface TableScene {
 
         operator fun minus(other: ActionState) = ActionState(this.states xor other.states)
         operator fun minus(other: Byte) = ActionState(this.states xor other)
+
         //endregion
+        fun equals(other: Byte?) = states == other
 
         fun contains(other: ActionState) = contains(other.states)
         fun contains(otherStates: Byte) = states and otherStates > 0
@@ -219,10 +271,11 @@ interface TableScene {
 
 class TableDragShadowBuilder(view: View, private val onShadowMetricsProvided: (Point, Point) -> Unit) : View.DragShadowBuilder(view) {
 
-    override fun onProvideShadowMetrics(outShadowSize: Point?, outShadowTouchPoint: Point?) {
-        super.onProvideShadowMetrics(outShadowSize, outShadowTouchPoint)
-        if (outShadowSize != null && outShadowTouchPoint != null) {
-            onShadowMetricsProvided(outShadowSize, outShadowTouchPoint)
+    override fun onProvideShadowMetrics(outShadowSize: Point, outShadowTouchPoint: Point) {
+        (view as? EmptyTableView)?.let {
+            outShadowSize.set(it.tableWidth.toInt() + it.horizontalFrame, it.tableHeight.toInt() + it.verticalFrame)
         }
+
+        onShadowMetricsProvided(outShadowSize, outShadowTouchPoint)
     }
 }

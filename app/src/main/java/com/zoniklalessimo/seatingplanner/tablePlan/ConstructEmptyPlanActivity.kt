@@ -4,7 +4,6 @@ import android.graphics.Point
 import android.os.Bundle
 import android.support.constraint.ConstraintSet
 import android.support.constraint.Guideline
-import android.support.v7.app.AppCompatActivity
 import android.transition.TransitionManager
 import android.util.Log
 import android.view.KeyEvent
@@ -13,6 +12,7 @@ import android.view.MenuItem
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import com.zoniklalessimo.seatingplanner.*
 import kotlinx.android.synthetic.main.activity_construct_empty_plan.*
 
@@ -46,9 +46,20 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragL
         setContentView(R.layout.activity_construct_empty_plan)
 
         slideSideOptionsOut()
+
         apply_changes.setOnClickListener {
             updateSeatCount()
             updateSeparators()
+        }
+
+        helper_btn.setOnClickListener {
+            Log.d(LOG_TAG, "The coords of all the tables are: ")
+            for (i in 0 until root.childCount) {
+                val child = root.getChildAt(i) as? EmptyTableView ?: continue
+
+                Log.d(LOG_TAG, "x: " + child.x)
+                Log.d(LOG_TAG, "y: " + child.y)
+            }
         }
 
         //region sideOptions UI controls
@@ -146,13 +157,27 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragL
     }
 
     private fun addTable(): Int {
-        val id = spawnTable(root, layoutInflater)
+        return addTable(spawnTable(root, layoutInflater))
+    }
+
+    override fun addTable(table: EmptyTableView, x: Float, y: Float): Int {
+        val xBias = if (x < 0) {
+            -x / (options_guide.left.toFloat() - table.tableWidth - table.horizontalFrame)
+        } else
+            x
+
+        val yBias = if (y < 0) {
+            -y / (root.height.toFloat() - table.tableHeight - table.verticalFrame)
+        } else
+            y
+
+        Log.d(LOG_TAG, "Bias is: $xBias and $yBias")
 
         rootConstraints.clone(root)
-        rootConstraints.connectTable(id, options_guide.id)
+        rootConstraints.connectTable(table.id, options_guide.id, xBias, yBias)
         rootConstraints.applyTo(root)
 
-        return id
+        return table.id
     }
 
     private var optionsGuideEnd: Int = 0

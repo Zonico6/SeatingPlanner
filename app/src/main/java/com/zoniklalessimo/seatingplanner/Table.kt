@@ -28,8 +28,30 @@ fun Table.insertAtStart(other: Table) {
     separators = (other.separators + other.seatCount + separators.map { it + other.seatCount }).toSortedSet()
 }
 
-fun Table.separatorsTillSeat(seat: Int) = separators.filter { it < seat }.toSortedSet()
-fun Table.separatorsFromSeat(seat: Int) = separators.mapNotNull {if (it - seat <= 0) null else it - seat}.toSortedSet()
+fun Table.separatorsToSeat(seat: Int): SortedSet<Int> {
+    val ret = sortedSetOf<Int>()
+    for (i in separators) {
+        if (i > seat)
+            break
+        ret.add(i)
+    }
+    return ret
+}
+
+fun Table.separatorsFromSeat(seat: Int): SortedSet<Int> {
+    var carry = -1
+    val ret = sortedSetOf<Int>()
+    for (i in separators) {
+        if (carry != -1) {
+            ret.add(i - carry)
+            continue
+        }
+        if (i > seat) {
+            carry = i
+        }
+    }
+    return ret
+}
 
 fun Table.separatorString(concatenate: String): String {
     val builder = StringBuilder((separators.size - 1) * concatenate.length + 1)
