@@ -10,7 +10,7 @@ interface Table {
         val oldSeats = seatCount
         seatCount += other.seatCount
         // Shift all separators so they are still correct after the insertion
-        separators = (separators.mapIndexed { index, e -> if (index >= at) e + other.seatCount else e } +
+        separators = (separators.mapIndexed { index, e -> if (index > at) e + other.seatCount else e } +
                 other.separators.map { it + oldSeats }).toSortedSet()
         separators.add(oldSeats)
     }
@@ -83,6 +83,15 @@ fun Table.assignSeparators(sepsStr: CharSequence) {
             currentNumber = StringBuilder(2)
         }
     }
+}
+
+fun Table.closestSeparator(seat: Int): Int {
+    val before = separatorBeforeSeat(seat)
+    val after = separatorAfterSeat(seat)
+    return if (seat - before < after - seat)
+        before
+    else
+        after
 }
 
 fun Table.addSeparator(pos: Int): Boolean = separators.add(pos)

@@ -60,14 +60,15 @@ interface TableScene {
         val table = inflater.inflate(R.layout.empty_table_dark, root, false) as EmptyTableView
 
         table.id = View.generateViewId()
+        table.setTag(R.id.table_state, ActionState.NONE)
 
         // Tabbing
         table.setOnClickListener {
             with (table) {
                 when (actionState().states) {
-                    TableScene.ActionState.NONE,
-                    TableScene.ActionState.TABBED -> setMovable()
-                    TableScene.ActionState.MOVABLE -> tabbed()
+                    ActionState.NONE -> setMovable()
+                    ActionState.MOVABLE -> tabbed()
+                    ActionState.TABBED -> resetActionState()
                     else -> { resetActionState() } // Something went wrong -> safely reset
                 }
             }
@@ -76,7 +77,7 @@ interface TableScene {
         table.setOnLongClickListener { _ ->
             val seat = table.touchedSeat
 
-            if (table.actionState().equals(TableScene.ActionState.MOVABLE) && seat != -1) {
+            if (table.actionState().equals(ActionState.MOVABLE) && seat != -1) {
                 fun makeNewTable(seatCount: Int, separators: SortedSet<Int>, xOffset: Float): Int {
                     val newTable = spawnTable(root, inflater)
                     newTable.setTag(R.id.drag_disabled, true)
@@ -176,40 +177,67 @@ interface TableScene {
 
     fun EmptyTableView.tabbed(@Suppress("DEPRECATION") color: Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
                                             context.getColor(R.color.tableTabbedHighlight) else
-                                            resources.getColor(R.color.tableTabbedHighlight),
-                              resetOthers: Boolean = true) {
-        if (resetOthers) {
+        resources.getColor(R.color.tableTabbedHighlight)) {
+        if (isMovable())
             resetMovableWithoutHighlight()
-        }
+        tabbedTable?.resetTabbed()
         tabbedTable = this
         highlight(color)
         slideSideOptionsIn()
+        setTag(R.id.table_state, ActionState.TABBED)
     }
 
     fun EmptyTableView.resetTabbed() {
         resetHighlight()
+        this.resetTabbedWithoutHighlight()
+    }
+
+    fun EmptyTableView.resetTabbedWithoutHighlight() {
+        if (this == tabbedTable) {
+            setTag(R.id.table_state, ActionState.NONE)
+            tabbedTable = null
+            slideSideOptionsOut()
+        }
+    }
+
+    fun resetTabbed() {
+        tabbedTable?.resetHighlight()
         resetTabbedWithoutHighlight()
     }
 
     fun resetTabbedWithoutHighlight() {
         slideSideOptionsOut()
+        tabbedTable?.setTag(R.id.table_state, ActionState.NONE)
         tabbedTable = null
     }
 
-    fun EmptyTableView.isTabbed() = this == tabbedTable
+    fun EmptyTableView.isTabbed() = if (this == tabbedTable) {
+        setTag(R.id.table_state, ActionState.TABBED)
+        true
+    } else
+        false
     //endregion
 
     //region Movable
-    var movableTable: EmptyTableView?
+    val movableTables: HashSet<Int>
 
     fun EmptyTableView.setMovable(@Suppress("DEPRECATION") color: Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
                                                 context.getColor(R.color.tableMoveHighlight) else
-                                                resources.getColor(R.color.tableMoveHighlight), resetOthers: Boolean = true) {
-        if (resetOthers) {
+        resources.getColor(R.color.tableMoveHighlight)) {
+        if (isTabbed())
             resetTabbedWithoutHighlight()
-        }
         highlight(color)
-        movableTable = this
+        movableTables.add(id)
+        this.setTag(R.id.table_state, ActionState.MOVABLE)
+    }
+
+    fun resetMovables(root: ConstraintLayout) {
+        movableTables.forEach {
+            val movable = (root.getViewById(it) as? EmptyTableView) ?: return@forEach
+            movable.resetHighlight()
+            movable.setTag(R.id.table_state, ActionState.NONE)
+        }
+        movableTables.clear()
     }
 
     fun EmptyTableView.resetMovable() {
@@ -217,21 +245,32 @@ interface TableScene {
         resetMovableWithoutHighlight()
     }
 
-    fun resetMovableWithoutHighlight() {
-        movableTable = null
+    fun EmptyTableView.resetMovableWithoutHighlight() {
+        // When making changes here, make sure to check
+        // if you need to make those in [resetMovables()] as well
+        if (movableTables.contains(id)) {
+            setTag(R.id.table_state, ActionState.NONE)
+            movableTables.remove(id)
+        }
     }
 
-    fun EmptyTableView.isMovable() = movableTable == this
+    fun EmptyTableView.isMovable() = if (movableTables.contains(id)) {
+        setTag(R.id.table_state, ActionState.MOVABLE)
+        true
+    } else {
+        false
+    }
     //endregion
 
     //region Action State
     fun EmptyTableView.resetActionState() {
-        resetMovable()
-        resetTabbed()
+        this.resetMovable()
+        this.resetTabbed()
     }
-    fun resetActionStates() {
-        movableTable?.resetMovable()
-        tabbedTable?.resetTabbed()
+
+    fun resetActionStates(root: ConstraintLayout) {
+        resetMovables(root)
+        resetTabbed()
     }
 
     fun EmptyTableView.actionState(): ActionState {
@@ -242,31 +281,32 @@ interface TableScene {
             state += ActionState.MOVABLE
         return state
     }
+    //endregion
+    //endregion
+}
 
-    class ActionState(var states: Byte = NONE) {
-        companion object {
-            const val NONE: Byte = 0x00
-            const val TABBED: Byte = 0x01
-            const val MOVABLE: Byte = 0x02
-        }
-
-        val isSingleState = sqrt(states.toFloat()) % 1 == 0f
-
-        //region Operator functions
-        operator fun plus(other: ActionState) = ActionState(this.states or other.states)
-        operator fun plus(other: Byte) = ActionState(this.states or other)
-
-        operator fun minus(other: ActionState) = ActionState(this.states xor other.states)
-        operator fun minus(other: Byte) = ActionState(this.states xor other)
-
-        //endregion
-        fun equals(other: Byte?) = states == other
-
-        fun contains(other: ActionState) = contains(other.states)
-        fun contains(otherStates: Byte) = states and otherStates > 0
+class ActionState(var states: Byte = NONE) {
+    companion object {
+        const val NONE: Byte = 0x00
+        const val TABBED: Byte = 0x01
+        const val MOVABLE: Byte = 0x02
     }
+
+    val isSingleState = sqrt(states.toFloat()) % 1 == 0f
+
+    //region Operator functions
+    operator fun plus(other: ActionState) = ActionState(this.states or other.states)
+
+    operator fun plus(other: Byte) = ActionState(this.states or other)
+
+    operator fun minus(other: ActionState) = ActionState(this.states xor other.states)
+    operator fun minus(other: Byte) = ActionState(this.states xor other)
+
     //endregion
-    //endregion
+    fun equals(other: Byte?) = states == other
+
+    fun contains(other: ActionState) = contains(other.states)
+    fun contains(otherStates: Byte) = states and otherStates > 0
 }
 
 class TableDragShadowBuilder(view: View, private val onShadowMetricsProvided: (Point, Point) -> Unit) : View.DragShadowBuilder(view) {

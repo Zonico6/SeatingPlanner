@@ -23,23 +23,8 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragL
     }
 
     override var tabbedTable: EmptyTableView? = null
-        set(value) {
-            if (value == null) {
-                if (sideOptionsPresent) {
-                    Log.w(LOG_TAG, "Variable 'tabbedTable' was not set to 'null' by method 'resetTabbed' " +
-                            "though this is convention since it ensures that variables are synchronized.")
-                    field?.resetTabbed()
-                    return
-                }
-            } else {
-                if (field != null) {
-                    field?.resetHighlight()
-                }
-            }
-            field = value
-        }
 
-    override var movableTable: EmptyTableView? = null
+    override var movableTables = hashSetOf<Int>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -105,7 +90,7 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragL
 
         //region scene controls
         root.setOnClickListener {
-            resetActionStates()
+            resetActionStates(root)
         }
 
         // Spawn one table because an empty scene is intimidating

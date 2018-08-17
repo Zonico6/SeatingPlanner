@@ -1,4 +1,4 @@
-package com.zoniklalessimo.seatingplanner.tablePlan
+/*package com.zoniklalessimo.seatingplanner
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -11,11 +11,11 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
-import com.zoniklalessimo.seatingplanner.*
 import java.util.*
 
-open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int) :
+abstract class TableView(context: Context, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int) :
         View(context, attrs, defStyleAttr, defStyleRes), Table {
+
     constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
             this(context, attrs, defStyleAttr, 0)
 
@@ -26,9 +26,9 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
             this(context, null)
 
     companion object {
-        const val LOG_TAG = "EmptyTableView"
+        const val LOG_TAG = "TableView"
     }
-    // TODO: Add seatColors[], whose colors get cycled through when drawing the seats
+
     // region Attributes
 
     //region Seat attributes
@@ -88,16 +88,12 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
     //endregion
 
     //region Separators
-    /**
-     * The separators that separate several tables within one [EmptyTableView]. A separator is represented by
-     * an Integer, which dictates the seat that the separator is displayed behind.
-     */
     override var separators: SortedSet<Int> = sortedSetOf()
-        set(separators) {
+        set(seps) {
             val oldSize = field.size
-            field = separators
+            field = seps
             invalidate()
-            if (separatorWidth != dividerWidth && oldSize != separators.size)
+            if (separatorWidth != dividerWidth && oldSize != seps.size)
                 requestLayout()
         }
 
@@ -332,27 +328,8 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
 
     //region Drawing
     override fun onDraw(canvas: Canvas?) {
-        super.onDraw(canvas)
-        if (canvas == null) return
 
-        canvas.drawRect(tableRect, seatPaint)
-        canvas.drawRoundRect(tableBorderRect, cornerRadius, cornerRadius, borderPaint)
-
-        for (i in 1 until seatCount) {
-            if (separators.contains(i))
-                canvas.drawSeparator(i)
-            else
-                canvas.drawDivider(i)
-        }
-    }
-
-    /**
-     * The area on the table that is left from the given position.
-     *
-     * @param index The position in form of the index of the partition.
-     * @return The length of area left from the index.
-     */
-    fun priorArea(index: Int): Float {
+    private fun priorArea(index: Int): Float {
         var seps = 0
         for (i in separators) {
             if (i < index)
@@ -363,13 +340,13 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
         return seatWidth * index + separatorWidth * seps + dividerWidth * (index - seps)
     }
 
-    private fun Canvas.drawDivider(index: Int) =
+    fun Canvas.drawDivider(index: Int) =
             drawPartition(priorArea(index), dividerWidth, dividerPaint)
 
-    private fun Canvas.drawSeparator(index: Int) =
+    fun Canvas.drawSeparator(index: Int) =
             drawPartition(priorArea(index), separatorWidth, separatorPaint)
 
-    private fun Canvas.drawPartition(priorWidth: Float, width: Float, paint: Paint) {
+    fun Canvas.drawPartition(priorWidth: Float, width: Float, paint: Paint) {
         val x = paddingLeft + borderSize + priorWidth
         val y = paddingTop.toFloat() + borderSize
         drawRect(x, y, x + width, y + seatHeight, paint)
@@ -377,44 +354,16 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
     //endregion
 
     var touchedSeat = -1
-        private set
+        protected set
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         touchedSeat = when (event.action) {
-            MotionEvent.ACTION_DOWN -> seatAt(event.x)
+            MotionEvent.ACTION_DOWN -> (event.x / width * seatCount).toInt()
             MotionEvent.ACTION_UP -> -1
             else -> touchedSeat
         }
         return super.onTouchEvent(event)
     }
     //endregion
-}
-
-/**
- * Get the seat at the specified position
- *
- * @param x The relative position on the view
- * @return The index of the corresponding seat
- */
-fun EmptyTableView.seatAt(x: Float) = (x / width * seatCount).toInt()
-
-/**
- * The closest separator to the specified position
- *
- * @param x The relative position on the table
- * @return The corresponding separator
- */
-fun EmptyTableView.closestSeparatorTo(x: Float): Int {
-    val seat = seatAt(x)
-    val before = separatorBeforeSeat(seat)
-    val after = separatorAfterSeat(seat)
-
-    val priorBefore = priorArea(before) + separatorWidth
-    val priorAfter = priorArea(after)
-
-    return if (x - priorBefore < priorAfter - x)
-        before
-    else
-        after
-}
+}*/
