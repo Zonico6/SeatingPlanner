@@ -32,8 +32,14 @@ interface TableScene {
 
     var shadowTouchPoint: Point?
 
-    fun View.startTableDrag() {
-        val dragShadow = TableDragShadowBuilder(this) { _, touchPoint ->
+    fun EmptyTableView.startTableDrag() {
+        val touchX = if (touchedSeat != -1) {
+            (priorArea(touchedSeat) + seatWidth / 2).toInt()
+        } else {
+            width / 2
+        }
+        val touch = Point(touchX, height / 2)
+        val dragShadow = TableDragShadowBuilder(this, touch) { _, touchPoint ->
             shadowTouchPoint = touchPoint
         }
 
@@ -309,12 +315,17 @@ class ActionState(var states: Byte = NONE) {
     fun contains(otherStates: Byte) = states and otherStates > 0
 }
 
-class TableDragShadowBuilder(view: View, private val onShadowMetricsProvided: (Point, Point) -> Unit) : View.DragShadowBuilder(view) {
+class TableDragShadowBuilder(view: View, private val touchPoint: Point?, private val onShadowMetricsProvided: (Point, Point) -> Unit) : View.DragShadowBuilder(view) {
 
     override fun onProvideShadowMetrics(outShadowSize: Point, outShadowTouchPoint: Point) {
         (view as? EmptyTableView)?.let {
             outShadowSize.set(it.tableWidth.toInt() + it.horizontalFrame, it.tableHeight.toInt() + it.verticalFrame)
         }
+
+        if (touchPoint != null)
+            outShadowTouchPoint.set(touchPoint.x, touchPoint.y)
+        else
+            outShadowTouchPoint.set(outShadowSize.x / 2, outShadowSize.y / 2)
 
         onShadowMetricsProvided(outShadowSize, outShadowTouchPoint)
     }
