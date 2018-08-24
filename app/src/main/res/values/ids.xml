@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <item name="drag_disabled" type="id" />
-    <item name="table_state" type="id" />
+    <id name="drag_disabled" />
+    <id name="table_state" />
+    <id name="is_options_item" />
 </resources>

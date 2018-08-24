@@ -11,74 +11,7 @@
         android:id="@+id/options_group"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:constraint_referenced_ids="separators,seat_count,rotation_tv,delete_btn" />
-
-    <EditText
-        android:id="@+id/rotation_tv"
-        android:layout_width="wrap_content"
-        android:layout_height="0dp"
-        android:layout_marginTop="40dp"
-        android:layout_weight="2"
-        android:hint="@string/rotation_hint"
-        android:textSize="20sp"
-        android:inputType="numberDecimal"
-        app:layout_constraintEnd_toEndOf="@+id/seat_count"
-        app:layout_constraintStart_toStartOf="@+id/seat_count"
-        app:layout_constraintTop_toBottomOf="@+id/seat_count" />
-
-    <EditText
-        android:id="@+id/seat_count"
-        android:layout_width="wrap_content"
-        android:layout_height="0dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="40dp"
-        android:layout_weight="2"
-        android:textSize="20sp"
-        android:hint="@string/seats_hint"
-        android:inputType="numberDecimal|numberSigned|textNoSuggestions"
-        app:layout_constrainedWidth="true"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="@+id/options_guide"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <EditText
-        android:id="@+id/separators"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="40dp"
-        android:hint="@string/separators_hint"
-        android:textSize="20sp"
-        android:inputType="textNoSuggestions"
-        app:layout_constraintEnd_toEndOf="@+id/rotation_tv"
-        app:layout_constraintStart_toStartOf="@+id/rotation_tv"
-        app:layout_constraintTop_toBottomOf="@+id/rotation_tv" />
-
-    <Button
-        android:id="@+id/delete_btn"
-        android:layout_width="wrap_content"
-        android:layout_height="0dp"
-        android:layout_marginTop="40dp"
-        android:layout_marginEnd="8dp"
-        android:layout_weight="2"
-        android:text="@string/delete"
-        android:textSize="20sp"
-        app:layout_constraintEnd_toEndOf="@+id/separators"
-        app:layout_constraintStart_toStartOf="@+id/separators"
-        app:layout_constraintTop_toBottomOf="@+id/separators" />
-
-    <!--
-    <com.zoniklalessimo.seatingplanner.tablePlan.EmptyTableView
-        android:id="@+id/sample_table"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/options_guide"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:seatCount="3"
-        app:seatHeight="@dimen/table_seat_height"
-        app:seatWidth="@dimen/table_seat_width" />
-    -->
+        app:constraint_referenced_ids="remove_seat_btn,delete_btn,seat_count_instruction,add_seat_btn,separators_instruction,edit_separators_table" />
 
     <android.support.constraint.Guideline
         android:id="@+id/options_guide"
@@ -106,5 +39,96 @@
         android:text="@string/helper"
         app:layout_constraintStart_toEndOf="@+id/apply_changes"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/seat_count_instruction"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
+        android:text="@string/seats_instruction"
+        android:textSize="18sp"
+        app:layout_constraintBottom_toBottomOf="@+id/remove_seat_btn"
+        app:layout_constraintEnd_toStartOf="@+id/add_seat_btn"
+        app:layout_constraintStart_toStartOf="@+id/options_guide"
+        app:layout_constraintTop_toTopOf="@+id/add_seat_btn" />
+
+    <Button
+        android:id="@+id/delete_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="16dp"
+        android:onClick="deleteTabbed"
+        android:text="@string/delete"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.51"
+        app:layout_constraintStart_toStartOf="@+id/options_guide" />
+
+    <ImageButton
+        android:id="@+id/add_seat_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="32dp"
+        android:contentDescription="@string/add_seat_description"
+        android:onClick="addSeatToTabbed"
+        android:src="@drawable/ic_add_box_black_24dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageButton
+        android:id="@+id/remove_seat_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:contentDescription="@string/remove_seat_description"
+        android:onClick="removeSeatFromTabbed"
+        android:src="@drawable/ic_indeterminate_check_box_black_24dp"
+        app:layout_constraintEnd_toEndOf="@+id/add_seat_btn"
+        app:layout_constraintStart_toStartOf="@+id/add_seat_btn"
+        app:layout_constraintTop_toBottomOf="@+id/add_seat_btn" />
+
+    <TextView
+        android:id="@+id/separators_instruction"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="40dp"
+        android:layout_marginEnd="8dp"
+        android:text="@string/separators_instruction"
+        android:textSize="18sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/options_guide"
+        app:layout_constraintTop_toBottomOf="@+id/remove_seat_btn" />
+
+    <com.zoniklalessimo.seatingplanner.tablePlan.EmptyTableView
+        android:id="@+id/edit_separators_table"
+        android:layout_width="0dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+
+        app:borderColor="#5824b9"
+        app:borderWidth="3dp"
+        app:cornerRadius="5dp"
+        app:dividerColor="#452506"
+        app:dividerWidth="4dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/options_guide"
+        app:layout_constraintTop_toBottomOf="@+id/separators_instruction"
+        app:seatColor="#44448c"
+        app:separatorColor="#ab7305"
+        app:separatorWidth="6dp">
+
+        <tag
+            android:id="@id/drag_disabled"
+            android:value="true" />
+    </com.zoniklalessimo.seatingplanner.tablePlan.EmptyTableView>
 
 </android.support.constraint.ConstraintLayout>
