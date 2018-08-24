@@ -6,14 +6,16 @@ import android.support.constraint.ConstraintSet
 import android.support.constraint.Guideline
 import android.transition.TransitionManager
 import android.util.Log
-import android.view.KeyEvent
 import android.view.Menu
 import android.view.MenuItem
+import android.view.MotionEvent
 import android.view.View
-import android.view.inputmethod.EditorInfo
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.zoniklalessimo.seatingplanner.*
+import androidx.core.view.iterator
+import com.zoniklalessimo.seatingplanner.DisplacementInformation
+import com.zoniklalessimo.seatingplanner.OnTableDragListener
+import com.zoniklalessimo.seatingplanner.R
+import com.zoniklalessimo.seatingplanner.TableScene
 import kotlinx.android.synthetic.main.activity_construct_empty_plan.*
 
 class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragListener {
@@ -30,12 +32,13 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragL
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_construct_empty_plan)
 
-        slideSideOptionsOut()
-
-        apply_changes.setOnClickListener {
-            updateSeatCount()
-            updateSeparators()
+        for (child in root) {
+            val tag = child.getTag(R.id.drag_disabled) ?: continue
+            if (tag is String)
+                child.setTag(R.id.drag_disabled, tag.toBoolean())
         }
+
+        slideSideOptionsOut()
 
         helper_btn.setOnClickListener {
             Log.d(LOG_TAG, "The coords of all the tables are: ")
@@ -48,45 +51,24 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragL
         }
 
         //region sideOptions UI controls
+        edit_separators_table.setOnTouchListener { view, event ->
+            if (event.action != MotionEvent.ACTION_DOWN)
+                return@setOnTouchListener false
 
-        fun ifFinishedTyping(actionId: Int, event: KeyEvent?, then: () -> Boolean): Boolean {
-            if (actionId == EditorInfo.IME_ACTION_SEARCH ||
-                    actionId == EditorInfo.IME_ACTION_DONE ||
-                    event != null &&
-                    event.action == KeyEvent.ACTION_DOWN &&
-                    event.keyCode == KeyEvent.KEYCODE_ENTER) {
-                if (event == null || !event.isShiftPressed) {
-                    // the user is done typing.
-                    return then()
+            (view as? EmptyTableView)?.let {
+                val partition = view.closestPartitionTo(event.x)
+
+                if (!it.separators.contains(partition)) {
+                    it.addSeparator(partition)
+                    tabbedTable?.addSeparator(partition)
+                } else {
+                    it.removeSeparator(partition)
+                    tabbedTable?.removeSeparator(partition)
                 }
-            }
-            return false
+            } ?: return@setOnTouchListener false
+            true
         }
-
-        seat_count.setOnEditorActionListener { _, actionId, event ->
-            ifFinishedTyping(actionId, event) {
-                tabbedTable?.let {
-                    updateSeatCount()
-                    true
-                } ?: false
-            }
-        }
-        rotation_tv.setOnEditorActionListener { _, actionId, event ->
-            ifFinishedTyping(actionId, event) {
-                Toast.makeText(this, "This feature isn't supported yet!", Toast.LENGTH_LONG).show()
-                false
-            }
-        }
-        separators.setOnEditorActionListener { _, actionId, event ->
-            ifFinishedTyping(actionId, event) {
-                tabbedTable?.let {
-                    updateSeparators()
-                    true
-                } ?: false
-            }
-        }
-
-        //endregion sideOptions UI controls
+        //endregion
 
         //region scene controls
         root.setOnClickListener {
@@ -111,18 +93,30 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragL
         get() = options_guide
     //endregion
 
-    private fun updateSeatCount() {
-        tabbedTable?.apply {
-            var text = seat_count.text.toString()
-            text = text.filter { it.isDigit() }
-            this.seatCount = text.toInt()
+    //region Xml callbacks
+    fun addSeatToTabbed(v: View) {
+        tabbedTable?.let {
+            it.seatCount += 1
         }
+        updateSideOptionViews()
     }
 
-    private fun updateSeparators() {
-        val text = separators.text
-        tabbedTable?.assignSeparators(text)
+    fun removeSeatFromTabbed(v: View) {
+        tabbedTable?.let {
+            it.seatCount -= 1
+        }
+        updateSideOptionViews()
     }
+
+    fun deleteTabbed(v: View) {
+        val tabbed = tabbedTable
+        if (tabbed != null) {
+            tabbed.resetTabbed()
+            root.removeView(tabbed)
+        }
+        slideSideOptionsOut()
+    }
+    //endregion
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         // android docs: https://developer.android.com/guide/topics/ui/menus.html
@@ -156,8 +150,6 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragL
         } else
             y
 
-        Log.d(LOG_TAG, "Bias is: $xBias and $yBias")
-
         rootConstraints.clone(root)
         rootConstraints.connectTable(table.id, options_guide.id, xBias, yBias)
         rootConstraints.applyTo(root)
@@ -167,18 +159,13 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragL
 
     private var optionsGuideEnd: Int = 0
     private val rootConstraints = ConstraintSet()
-    override var sideOptionsPresent = true
 
     private fun updateSideOptionViews() {
-        try {
-            seat_count.setText(String.format(this.getString(R.string.seats), tabbedTable!!.seatCount))
-            separators.setText(String.format(this.getString(R.string.separators), tabbedTable!!.separatorString()))
-            // TODO: Rotation
-        } catch (e: NullPointerException) {
-            Log.e(LOG_TAG, "Tried to updateSideViewOptions without a tabbed view.")
-            e.printStackTrace()
-        }
+        edit_separators_table.seatCount = tabbedTable?.seatCount ?: 1
+        edit_separators_table.separators = tabbedTable?.separators ?: sortedSetOf()
     }
+
+    var sideOptionsPresent = true
 
     private fun toggleSideOptions() {
         sideOptionsPresent = if (sideOptionsPresent) {
