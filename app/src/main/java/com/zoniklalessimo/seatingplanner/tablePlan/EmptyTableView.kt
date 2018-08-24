@@ -28,12 +28,14 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
     companion object {
         const val LOG_TAG = "EmptyTableView"
     }
-    // TODO: Add seatColors[], whose colors get cycled through when drawing the seats
+
     // region Attributes
 
     //region Seat attributes
+    private var seatCountChanged = false
     final override var seatCount: Int = 1
         set(value) {
+            seatCountChanged = true
             field = value
             invalidate()
             requestLayout()
@@ -241,72 +243,42 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
     }
 
     //region Measuring
-    /**
-     * @return The desired width without border and padding
-     */
-    private fun desiredTableWidth(measureSpec: Int): Int {
-        val size = MeasureSpec.getSize(measureSpec)
-        val mode = MeasureSpec.getMode(measureSpec)
+    private fun desiredSize(measureSpec: Int, size: Int): Int {
+        val specSize = MeasureSpec.getSize(measureSpec)
+        val specMode = MeasureSpec.getMode(measureSpec)
 
-        // Size == 0 would mess things up, so if that's present, return and leave seatWidth
-        if (size == 0) {
-            if (seatWidth == -1f) { // Size of measureSpec 0, seatWidth -1 -> No way of telling the size
-                Log.e(LOG_TAG, "MeasureSpec->size and seatWidth both have placeholder values " +
-                        "so determining a size isn't possible.")
+        if (specSize == 0) {
+            if (size == -1) {
+                Log.e(LOG_TAG,
+                        "MeasureSpec->size and seatHeight both have placeholder values, can't determine size.")
             }
-            return tableWidth.toInt()
+            return size
         }
 
-        var requestedWidth = (size - horizontalFrame).toFloat()
-
-        // AT_MOST: wrap_content
-        if (mode == MeasureSpec.AT_MOST) {
-            if (seatWidth == -1f) {
-                Log.w(LOG_TAG, "MeasureSpec was \'AT_MOST\', which requires seatWidth to be set." +
-                        "However it wasn't so \'EXACTLY\' was used instead.")
-            } else {
-                requestedWidth = Math.min(tableWidth, requestedWidth)
-            }
-        }
-        return requestedWidth.toInt()
-        //seatWidth = (requestedWidth - partitionSpace) / seatCount
-    }
-
-    /**
-     * @return The desired height without border and padding
-     */
-    private fun desiredTableHeight(measureSpec: Int): Int {
-        val size = MeasureSpec.getSize(measureSpec)
-        val mode = MeasureSpec.getMode(measureSpec)
-
-        // Size == 0 would mess things up, so if that's present, return and leave seatHeight
-        if (size == 0) {
-            if (seatHeight == -1f) { // Size of measureSpec 0, seatWidth -1 -> No way of telling the size
-                Log.e(LOG_TAG, "MeasureSpec->size and seatHeight both have placeholder values " +
-                        "so determining a size isn't possible.")
-            }
-            return tableHeight.toInt()
-        }
-
-        val desiredHeight = (size - verticalFrame).toFloat()
-
-        if (mode == MeasureSpec.AT_MOST) {
-            if (seatHeight == -1f) {
+        if (specMode == MeasureSpec.AT_MOST) {
+            if (size == -1) {
                 Log.w(LOG_TAG,
-                        "MeasureSpec was \'AT_MOST\'. Since seatHeight was not set, " +
+                        "MeasureSpec was \'AT_MOST\'. Since size was not set, " +
                                 "\'EXACTLY\' was used instead.")
             } else {
-                return Math.min(seatHeight, desiredHeight).toInt()
+                return Math.min(size, specSize)
             }
         }
-        return desiredHeight.toInt()
+        return specSize
+    }
+
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        if (!changed && seatCountChanged) {
+            seatWidth = (right - left - horizontalFrame - partitionSpace) / seatCount
+        }
+        super.onLayout(changed, left, top, right, bottom)
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val w = desiredTableWidth(widthMeasureSpec) + horizontalFrame
-        val h = desiredTableHeight(heightMeasureSpec) + verticalFrame
+        val desiredWidth = desiredSize(widthMeasureSpec, if (tableWidth.toInt() == -1) -1 else tableWidth.toInt() + horizontalFrame)
+        val desiredHeight = desiredSize(heightMeasureSpec, if (tableHeight.toInt() == -1) -1 else tableHeight.toInt() + verticalFrame)
 
-        setMeasuredDimension(w, h)
+        setMeasuredDimension(desiredWidth, desiredHeight)
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
@@ -327,7 +299,6 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
         val y2 = paddingTop + borderSize
         tableRect = RectF(x2, y2, x2 + tableWidth, y2 + tableHeight)
     }
-
     //endregion
 
     //region Drawing
@@ -376,6 +347,27 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
     }
     //endregion
 
+    //endregion
+    /**
+     * Reduce the table to the snippet between the two seats.
+     *
+     * @param start The partition position that's gonna be the start of the new table
+     * @param end The partition position that's gonna be the end of the new table
+     */
+    fun cut(start: Int, end: Int) {
+        touchedSeat = Math.max(touchedSeat - start, -1)
+
+        separators = separators.mapNotNull {
+            if (it <= start || it >= end)
+                null
+            else {
+                it - start
+            }
+        }.toSortedSet()
+
+        seatCount = end - start
+    }
+
     var touchedSeat = -1
         private set
 
@@ -388,8 +380,9 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
         }
         return super.onTouchEvent(event)
     }
-    //endregion
 }
+
+fun EmptyTableView.cut(ends: Pair<Int, Int>) = cut(ends.first, ends.second)
 
 /**
  * Get the seat at the specified position
@@ -418,3 +411,27 @@ fun EmptyTableView.closestSeparatorTo(x: Float): Int {
     else
         after
 }
+
+fun EmptyTableView.addSeparator(pos: Int): Boolean {
+    val ret = separators.add(pos)
+    invalidate()
+    requestLayout()
+    return ret
+}
+
+fun EmptyTableView.removeSeparator(pos: Int): Boolean {
+    val ret = separators.remove(pos)
+    invalidate()
+    requestLayout()
+    return ret
+}
+
+fun EmptyTableView.containsSeparator(separator: Int) = separators.contains(separator)
+
+fun EmptyTableView.clearSeparators() {
+    separators.clear()
+    invalidate()
+    requestLayout()
+}
+
+fun EmptyTableView.closestPartitionTo(x: Float) = Math.round((x / width * seatCount))
