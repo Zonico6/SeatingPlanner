@@ -11,6 +11,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.zoniklalessimo.seatingplanner.tablePlan.EmptyTableView
+import com.zoniklalessimo.seatingplanner.tablePlan.cut
 import java.util.*
 import kotlin.experimental.and
 import kotlin.experimental.or
@@ -87,6 +88,7 @@ interface TableScene {
                 fun makeNewTable(seatCount: Int, separators: SortedSet<Int>, xOffset: Float): Int {
                     val newTable = spawnTable(root, inflater)
                     newTable.setTag(R.id.drag_disabled, true)
+                    newTable.tag = "drag_disabled_once"
 
                     newTable.seatCount = seatCount
                     newTable.separators = separators
@@ -108,14 +110,7 @@ interface TableScene {
                     makeNewTable(sep, table.separatorsToSeat(seat), 0f)
                 }
 
-                table.seatCount = table.sectionAround(seat)
-                table.clearSeparators()
-
-                // This fixes the shadow in that it's the appropriate size, however it screws the table's
-                // size after it's been placed to be as big as the entire table before the split up
-                // val left = table.left + sep * table.seatWidth.toInt()
-                // table.layout(left, table.top,
-                //        left + table.tableWidth.toInt() + table.horizontalFrame, table.bottom)
+                table.cut(table.sectionAround(seat))
             }
             table.startTableDrag()
             true
@@ -167,10 +162,6 @@ interface TableScene {
                 sideGuide.id, ConstraintSet.START, 0, xBias)
         center(table.id, ConstraintSet.PARENT_ID, ConstraintSet.TOP, 0,
                 ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM, 0, yBias)
-
-        // Prevent view from inflating to screen size
-        constrainWidth(table.id, table.tableWidth.toInt() + table.horizontalFrame)
-        constrainHeight(table.id, table.tableHeight.toInt() + table.verticalFrame)
     }
     //endregion
 

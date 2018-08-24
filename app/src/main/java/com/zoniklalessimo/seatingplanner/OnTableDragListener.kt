@@ -8,6 +8,7 @@ import android.support.constraint.Guideline
 import android.util.Log
 import android.view.DragEvent
 import android.view.View
+import android.view.ViewGroup
 import androidx.core.view.iterator
 import com.zoniklalessimo.seatingplanner.tablePlan.EmptyTableView
 import com.zoniklalessimo.seatingplanner.tablePlan.closestSeparatorTo
@@ -17,21 +18,31 @@ const val MOVE_TABLE_ON_ROW_BUILT = true
 const val MOVE_TABLE_AMOUNT_PERCENT = 50
 
 data class DisplacementInformation(
-        val involved: MutableList<Pair<Int, PointF>>,
+        val row: MutableList<Pair<EmptyTableView, PointF>>,
         var joinedRect: RectF?,
         var indicatorDisplaced: Boolean,
-        var displacedAtSideOptions: Boolean,
-        var displacedAtSeparator: Int?
+        var displacedAtSide: Int,
+        var insertAtSeparator: Int?
 ) {
-    constructor() : this(mutableListOf(), null, false, false, null)
+    companion object {
+        const val SIDE_NONE: Int = 0x00
+        const val SIDE_LEFT: Int = 0x01
+        const val SIDE_TOP: Int = 0x02
+        const val SIDE_RIGHT: Int = 0x04
+        const val SIDE_BOTTOM: Int = 0x08
+    }
+
+    constructor() : this(mutableListOf(), null, false, SIDE_NONE, null)
+
+    fun addSide(side: Int): Int {
+        displacedAtSide = displacedAtSide or side
+        return displacedAtSide
+    }
 }
 
 interface OnTableDragListener : View.OnDragListener, TableScene {
     val optionsGuide: Guideline
     val constraints: ConstraintSet
-
-    val sideOptionsPresent: Boolean?
-        get() = null
 
     var displaceInfo: DisplacementInformation?
 
@@ -61,24 +72,24 @@ interface OnTableDragListener : View.OnDragListener, TableScene {
                         false
                     }
 
-            fun addToRow(base: RectF, new: View): RectF {
+            fun addToRow(base: RectF, new: EmptyTableView): RectF {
                 val oldPos = PointF(new.x, new.y)
 
                 new.y = base.top
 
                 val offset = if (base.centerX() < new.center.x) {
-                    displaceInfo!!.involved.add(new.id to oldPos)
+                    displaceInfo!!.row.add(new to oldPos)
                     new.x = base.left + base.width()
                     -table_move_amount
                 } else {
-                    displaceInfo!!.involved.add(0, new.id to oldPos)
+                    displaceInfo!!.row.add(0, new to oldPos)
                     new.x = base.left - new.width
                     table_move_amount
                 }
 
-                if (MOVE_TABLE_ON_ROW_BUILT && !displaceInfo!!.displacedAtSideOptions) {
-                    for ((id, _) in displaceInfo!!.involved) {
-                        root.getViewById(id).x += offset
+                if (MOVE_TABLE_ON_ROW_BUILT && displaceInfo!!.displacedAtSide == DisplacementInformation.SIDE_NONE) {
+                    for ((table, _) in displaceInfo!!.row) {
+                        table.x += offset
                     }
                 }
 
@@ -89,7 +100,7 @@ interface OnTableDragListener : View.OnDragListener, TableScene {
 
             fun indicateInsert(table: EmptyTableView) {
                 val separator = table.closestSeparatorTo(event.x - table.x)
-                if (separator == displaceInfo!!.displacedAtSeparator)
+                if (separator == displaceInfo!!.insertAtSeparator)
                     return
                 val separatorSpot = table.x + table.priorArea(separator) + table.separatorWidth / 2
                 val indicatorX = separatorSpot - indicator.width / 2
@@ -99,8 +110,10 @@ interface OnTableDragListener : View.OnDragListener, TableScene {
                     var area = 0f
                     val intersection = RectF()
                     layout@ for (child in root) {
-                        when (indicator.id) { child.id, table.id -> continue@layout
-                        }
+                        if (child.id == indicator.id ||
+                                child.id == table.id ||
+                                child.getTag(R.id.drag_disabled) == true)
+                            continue@layout
                         intersection.setIntersect(frame, child.frame())
                         area += intersection.width() * intersection.height()
                     }
@@ -118,7 +131,20 @@ interface OnTableDragListener : View.OnDragListener, TableScene {
 
                 displaceIndicator(indicatorX, indicatorY)
                 displaceInfo!!.joinedRect = table.frame()
-                displaceInfo!!.displacedAtSeparator = separator
+                displaceInfo!!.insertAtSeparator = separator
+            }
+
+            fun resetIndication() {
+                for ((table, pos) in displaceInfo!!.row) {
+                    table.x = pos.x
+                    table.y = pos.y
+                }
+                displaceInfo!!.row.clear()
+
+                indicator.visibility = View.INVISIBLE
+                displaceInfo!!.joinedRect = null
+                displaceInfo!!.indicatorDisplaced = false
+                displaceInfo!!.insertAtSeparator = null
             }
 
             when (event.action) {
@@ -140,49 +166,51 @@ interface OnTableDragListener : View.OnDragListener, TableScene {
                     val bottom = top + indicator.height
                     val shadowRect = RectF(left, top, right, bottom)
 
+                    fun displaceIfOutside(side: Int) {
+                        when (side) {
+                            DisplacementInformation.SIDE_RIGHT -> displaceIndicator(optionsGuide.left - indicator.width + 0f, top)
+                            DisplacementInformation.SIDE_LEFT -> displaceIndicator(0f, top)
+                            DisplacementInformation.SIDE_TOP -> displaceIndicator(left, 0f)
+                            DisplacementInformation.SIDE_BOTTOM -> displaceIndicator(left, root.height.toFloat())
+                        }
+                    }
+
+                    val outsideScreenAtSide = when {
+                        right > optionsGuide.left -> DisplacementInformation.SIDE_RIGHT
+                        left < 0 -> DisplacementInformation.SIDE_LEFT
+                        top < 0 -> DisplacementInformation.SIDE_TOP
+                        bottom > root.height -> DisplacementInformation.SIDE_BOTTOM
+                        else -> DisplacementInformation.SIDE_NONE
+                    }
+
                     val intersectJoined: Boolean = RectF.intersects(displaceInfo!!.joinedRect
                         ?: RectF(), shadowRect)
 
-                    val intersectIndicator: Boolean by lazy {
-                        RectF.intersects(indicator.frame(), shadowRect)
-                    }
-
-                    if (displaceInfo!!.displacedAtSeparator != null) {
-                        if (intersectJoined || intersectIndicator) {
-                            val adjacent = root.getViewById(displaceInfo!!.involved.first().first)
-                            if (adjacent is EmptyTableView) {
-                                indicateInsert(adjacent)
-                            }
-                            return true
-                        }
-                    }
                     if (isDisplaced()) {
-                        if (!intersectJoined &&
-                                // If displaced at a movable table, indicator is not included in joinedRect
-                                !(displaceInfo!!.displacedAtSeparator != null && intersectIndicator)) {
-                            for ((id, pos) in displaceInfo!!.involved) {
-                                val view = root.getViewById(id)
-                                view.x = pos.x
-                                view.y = pos.y
-
-                            }
-                            displaceInfo!!.involved.clear()
-
-                            indicator.visibility = View.INVISIBLE
-                            displaceInfo!!.joinedRect = null
-                            displaceInfo!!.indicatorDisplaced = false
-                            displaceInfo!!.displacedAtSeparator = null
+                        if (displaceInfo!!.displacedAtSide != DisplacementInformation.SIDE_NONE) {
+                            displaceIfOutside(outsideScreenAtSide)
+                            if (outsideScreenAtSide == DisplacementInformation.SIDE_NONE)
+                                resetIndication()
+                        } else if (!intersectJoined) {
+                            resetIndication()
+                            // Update indication of insertion
+                        } else if (displaceInfo!!.insertAtSeparator != null) {
+                            val adjacent = displaceInfo!!.row.first().first
+                            indicateInsert(adjacent)
+                            return true
                         } else return true
                     } else {
                         // setup
                         val rowRect = RectF()
 
-                        val optionsGap = optionsGuide.left - event.x - shadowTouchPoint!!.x
-                        if (optionsGap < 0) {
-                            displaceInfo!!.displacedAtSideOptions = true
-                            displaceIndicator(optionsGuide.left - indicator.width + 0f, top)
-                            rowRect.set(indicator.x, top, indicator.x + indicator.width, bottom)
-                            displaceInfo!!.involved.add(indicator.id to PointF(indicator.x, indicator.y))
+                        displaceIfOutside(outsideScreenAtSide)
+
+                        displaceInfo!!.addSide(outsideScreenAtSide)
+                        if (outsideScreenAtSide != DisplacementInformation.SIDE_NONE) {
+                            with(indicator) {
+                                displaceInfo!!.row.add(this to PointF(x, y))
+                                rowRect.set(x, y, x + width, y + height)
+                            }
                         } else {
                             var intersectArea = 0f
                             var adjacent: View? = null
@@ -192,7 +220,7 @@ interface OnTableDragListener : View.OnDragListener, TableScene {
                                         child.getTag(R.id.drag_disabled) == true)
                                     continue
 
-                                // In order toBuild a row with the table that is overlapped most, first loop
+                                // In order to build a row with the table that is overlapped most, first loop
                                 // through every table and then work with the one with the biggest intersection
                                 val intersection = RectF()
                                 if (intersection.setIntersect(shadowRect, child.frame())) {
@@ -207,20 +235,20 @@ interface OnTableDragListener : View.OnDragListener, TableScene {
                             (adjacent as? EmptyTableView)?.let {
                                 // Movable Table
                                 if (adjacent.getTag(R.id.table_state) == ActionState.MOVABLE) {
-                                    displaceInfo!!.involved.add(adjacent.id to PointF(adjacent.x, adjacent.y))
+                                    displaceInfo!!.row.add(adjacent to PointF(adjacent.x, adjacent.y))
                                     indicateInsert(adjacent)
                                     return true
                                 }
 
                                 // Attaching to the side
-                                displaceInfo!!.involved.add(indicator.id to PointF(indicator.x, indicator.y))
+                                displaceInfo!!.row.add(indicator to PointF(indicator.x, indicator.y))
                                 val newX = if (shadowRect.centerX() < adjacent.center.x) {
-                                    displaceInfo!!.involved.add(adjacent.id to PointF(adjacent.x, adjacent.y))
+                                    displaceInfo!!.row.add(adjacent to PointF(adjacent.x, adjacent.y))
                                     if (MOVE_TABLE_ON_ROW_BUILT)
                                         adjacent.x += table_move_amount
                                     adjacent.x - indicator.width
                                 } else {
-                                    displaceInfo!!.involved.add(0, adjacent.id to PointF(adjacent.x, adjacent.y))
+                                    displaceInfo!!.row.add(0, adjacent to PointF(adjacent.x, adjacent.y))
                                     if (MOVE_TABLE_ON_ROW_BUILT)
                                         adjacent.x -= table_move_amount
                                     adjacent.x + adjacent.width
@@ -230,13 +258,14 @@ interface OnTableDragListener : View.OnDragListener, TableScene {
                                 rowRect.union(indicator.frame())
                             } ?: return true
                         }
+
                         // loop
                         var finished = false
                         while (!finished) {
                             for (child in root) {
                                 if (child !is EmptyTableView ||
                                         // If the child is the one table from setup, skip it
-                                        displaceInfo!!.involved.find { it.first == child.id } != null ||
+                                        displaceInfo!!.row.find { it.first == child } != null ||
                                         child.getTag(R.id.drag_disabled) == true) continue
 
                                 if (RectF.intersects(rowRect, child.frame())) {
@@ -254,26 +283,25 @@ interface OnTableDragListener : View.OnDragListener, TableScene {
 
                 DragEvent.ACTION_DROP -> {
                     // Movable insert
-                    if (displaceInfo!!.displacedAtSeparator != null) {
-                        val inv = displaceInfo!!.involved.first()
+                    if (displaceInfo!!.insertAtSeparator != null) {
+                        val inv = displaceInfo!!.row.first()
                         indicator.x = inv.second.x - indicator.width / 2
                         indicator.y = inv.second.y
 
-                        val table = root.getViewById(inv.first) as? EmptyTableView ?: return false
+                        val table = inv.first as? EmptyTableView ?: return false
                         table.insertTable(table.closestSeparatorTo(indicator.center.x), indicator)
                         indicator.set(table)
                         root.removeView(table)
                     } else if (isDisplaced()) {
                         // Set x to start of row
-                        indicator.x = root.getViewById(displaceInfo!!.involved.first().first).x
+                        indicator.x = displaceInfo!!.row.first().first.x
 
                         val viewsInRowThatHaveToBeRemovedAfterwards = mutableListOf<View>()
 
                         // Involved list resembles the order of the tables, so remember if you have passed
                         // Indicator and need to appending the tables instead of inserting at the start
                         var coveredInd = false
-                        for ((id, _) in displaceInfo!!.involved) {
-                            val view = root.getViewById(id)
+                        for ((view, _) in displaceInfo!!.row) {
                             if (view == indicator) {
                                 coveredInd = true
                                 continue
@@ -306,6 +334,11 @@ interface OnTableDragListener : View.OnDragListener, TableScene {
                     shadowTouchPoint = null
                     indicator.visibility = View.VISIBLE
 
+                    val params = indicator.layoutParams
+                    params.width = ViewGroup.LayoutParams.WRAP_CONTENT
+                    params.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                    indicator.layoutParams = params
+
                     constraints.modify({
                         restoreBiases(indicator, optionsGuide, root.height.toFloat())
                     }, root)
@@ -315,9 +348,13 @@ interface OnTableDragListener : View.OnDragListener, TableScene {
 
                     displaceInfo = null
 
-                    for (child in root) {
-                        child.setTag(R.id.drag_disabled, false)
+                    while (true) {
+                        val once = root.findViewWithTag<EmptyTableView>("drag_disabled_once")
+                            ?: break
+                        once.tag = null
+                        once.setTag(R.id.drag_disabled, false)
                     }
+
                 }
                 // An unknown action type was received.
                 else -> Log.e("DragDrop Example", "Unknown action type received by OnDragListener.")

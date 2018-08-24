@@ -94,9 +94,6 @@ fun Table.closestSeparator(seat: Int): Int {
         after
 }
 
-fun Table.addSeparator(pos: Int): Boolean = separators.add(pos)
-fun Table.clearSeparators() = separators.clear()
-
 fun Table.separatorBeforeSeat(seat: Int): Int {
     var carry = 0
     for (e in separators) {
@@ -114,7 +111,25 @@ fun Table.separatorAfterSeat(seat: Int): Int {
     return seatCount
 }
 
-fun Table.sectionAround(seat: Int): Int {
+/**
+ * Get the separators enclosing the section around this seat.
+ * I.e. Get the indices of the separator before and after this seat.
+ */
+fun Table.sectionAround(seat: Int): Pair<Int, Int> {
+    var carry = 0
+    for (e in separators) {
+        if (e > seat) {
+            return Pair(carry, e)
+        }
+        carry = e
+    }
+    return Pair(carry, seatCount)
+}
+
+/**
+ * Get the number of seats between the separator before the given seat and after it.
+ */
+fun Table.sectionLength(seat: Int): Int {
     var carry = 0
     for (e in separators) {
         if (e > seat) {
@@ -125,6 +140,13 @@ fun Table.sectionAround(seat: Int): Int {
     return seatCount - carry
 }
 
+/**
+ * Get two sets of separators
+ *
+ * @param seat The seat, which is being split at
+ *
+ * @return Two sets of separators, split at the first separator before the seat
+ */
 fun Table.separatorSpliceAt(seat: Int): Array<SortedSet<Int>> {
     val firstSeps: SortedSet<Int> = sortedSetOf()
     val newSeps = sortedSetOf<Int>()
