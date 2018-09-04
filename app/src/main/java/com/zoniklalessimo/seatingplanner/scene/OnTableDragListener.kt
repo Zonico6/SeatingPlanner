@@ -1,4 +1,4 @@
-package com.zoniklalessimo.seatingplanner
+package com.zoniklalessimo.seatingplanner.scene
 
 import android.graphics.PointF
 import android.graphics.RectF
@@ -10,8 +10,7 @@ import android.view.DragEvent
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.iterator
-import com.zoniklalessimo.seatingplanner.tablePlan.EmptyTableView
-import com.zoniklalessimo.seatingplanner.tablePlan.closestSeparatorTo
+import com.zoniklalessimo.seatingplanner.R
 
 // TODO: Embed settings in android preference api
 const val MOVE_TABLE_ON_ROW_BUILT = true
@@ -288,12 +287,13 @@ interface OnTableDragListener : View.OnDragListener, TableScene {
                         indicator.x = inv.second.x - indicator.width / 2
                         indicator.y = inv.second.y
 
-                        val table = inv.first as? EmptyTableView ?: return false
+                        val table = inv.first as? EmptyTableView
+                            ?: return false
                         table.insertTable(table.closestSeparatorTo(indicator.center.x), indicator)
                         indicator.set(table)
                         root.removeView(table)
                     } else if (isDisplaced()) {
-                        // Set x to start of row
+                        // Set xBias to start of row
                         indicator.x = displaceInfo!!.row.first().first.x
 
                         val viewsInRowThatHaveToBeRemovedAfterwards = mutableListOf<View>()
@@ -342,7 +342,7 @@ interface OnTableDragListener : View.OnDragListener, TableScene {
                     constraints.modify({
                         restoreBiases(indicator, optionsGuide, root.height.toFloat())
                     }, root)
-                    // Synchronize x and y with layout position
+                    // Synchronize xBias and yBias with layout position
                     indicator.translationX = 0f
                     indicator.translationY = 0f
 

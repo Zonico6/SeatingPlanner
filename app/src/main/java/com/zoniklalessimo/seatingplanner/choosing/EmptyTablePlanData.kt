@@ -5,13 +5,12 @@ import android.util.JsonWriter
 import com.zoniklalessimo.seatingplanner.scene.Table
 import java.io.*
 import java.util.*
-import kotlin.concurrent.thread
 
 // TODO: Store the key names of the json properties somewhere central, maybe SharedPreferences
 
-class EmptyDataTablePlan(val src: File, reader: JsonReader, onTablesRead: (List<EmptyDataTable>) -> Unit) {
+class EmptyDataTablePlan(val src: File, reader: JsonReader) : Serializable {
     companion object {
-        fun read(reader: JsonReader): Array<EmptyDataTable> {
+        fun readTables(reader: JsonReader): Array<EmptyDataTable> {
             val tables = mutableListOf<EmptyDataTable>()
             reader.beginArray()
 
@@ -23,50 +22,45 @@ class EmptyDataTablePlan(val src: File, reader: JsonReader, onTablesRead: (List<
             return tables.toTypedArray()
         }
 
-        fun save(writer: JsonWriter, tables: Iterable<EmptyDataTable>) {
+        fun saveTables(writer: JsonWriter, tables: Iterable<EmptyDataTable>) {
             writer.beginArray()
             for (table in tables) {
-
+                table.write(writer)
             }
             writer.endArray()
         }
     }
 
-    constructor(src: File, onTablesRead: (List<EmptyDataTable>) -> Unit = {}) : this(
+    constructor(src: File) : this(
             src,
-            JsonReader(InputStreamReader(FileInputStream(src))),
-            onTablesRead)
-
-    private var ioThread: Thread?
-
-    init {
-        ioThread = thread {
-            tables.addAll(read(reader))
-            reader.close()
-            hasData = true
-            onTablesRead(tables)
-        }
-    }
+            JsonReader(InputStreamReader(FileInputStream(src))))
 
     val tables = mutableListOf<EmptyDataTable>()
-    var hasData = false
-        private set
+    val name: String
 
-    fun isWriting() = ioThread != null && hasData
-    fun isResting() = ioThread == null
-
-    fun save(onFinishWriting: () -> Unit = {}) {
-        ioThread = thread {
-            val writer = OutputStreamWriter(FileOutputStream(src), "UTF-8")
-            save(JsonWriter(writer), tables)
-            writer.close()
-            onFinishWriting()
-            ioThread = null
+    init {
+        reader.beginObject()
+        var nameVal = ""
+        while (reader.hasNext()) {
+            when (reader.nextName()) {
+                "name" -> nameVal = reader.nextString()
+                "tables" -> tables.addAll(readTables(reader))
+                else -> reader.skipValue()
+            }
         }
+        reader.endObject()
+        name = nameVal
+        reader.close()
+    }
+
+    fun save() {
+        val writer = OutputStreamWriter(FileOutputStream(src), "UTF-8")
+        saveTables(JsonWriter(writer), tables)
+        writer.close()
     }
 }
 
-class EmptyDataTable(val x: Float, val y: Float, override var seatCount: Int, override var separators: SortedSet<Int>) : Table {
+class EmptyDataTable(val xBias: Float, val yBias: Float, override var seatCount: Int, override var separators: SortedSet<Int>) : Table {
     companion object {
         fun fromJson(reader: JsonReader): EmptyDataTable {
             var x = -1f
@@ -77,8 +71,8 @@ class EmptyDataTable(val x: Float, val y: Float, override var seatCount: Int, ov
             reader.beginObject()
             while (reader.hasNext()) {
                 when (reader.nextName()) {
-                    "x" -> x = reader.nextDouble().toFloat()
-                    "y" -> y = reader.nextDouble().toFloat()
+                    "xBias" -> x = reader.nextDouble().toFloat()
+                    "yBias" -> y = reader.nextDouble().toFloat()
                     "seats" -> seatCount = reader.nextInt()
                     "separators" -> separators = readSeparators(reader)
                     else -> reader.skipValue()
@@ -104,8 +98,8 @@ class EmptyDataTable(val x: Float, val y: Float, override var seatCount: Int, ov
     fun write(writer: JsonWriter) {
         with(writer) {
             beginObject()
-            name("x").value(x)
-            name("y").value(y)
+            name("xBias").value(xBias)
+            name("yBias").value(yBias)
             name("seats").value(seatCount)
             writeSeparators()
             endObject()

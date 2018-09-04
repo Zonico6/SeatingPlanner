@@ -1,24 +1,23 @@
-package com.zoniklalessimo.seatingplanner.tablePlan
+package com.zoniklalessimo.seatingplanner
 
 import android.graphics.Point
 import android.os.Bundle
 import android.support.constraint.ConstraintSet
 import android.support.constraint.Guideline
 import android.transition.TransitionManager
-import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
-import android.view.MotionEvent
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.iterator
-import com.zoniklalessimo.seatingplanner.DisplacementInformation
-import com.zoniklalessimo.seatingplanner.OnTableDragListener
-import com.zoniklalessimo.seatingplanner.R
-import com.zoniklalessimo.seatingplanner.TableScene
+import com.zoniklalessimo.seatingplanner.choosing.EmptyDataTable
+import com.zoniklalessimo.seatingplanner.scene.DisplacementInformation
+import com.zoniklalessimo.seatingplanner.scene.EmptyTableView
+import com.zoniklalessimo.seatingplanner.scene.OnTableDragListener
+import com.zoniklalessimo.seatingplanner.scene.TableScene
 import kotlinx.android.synthetic.main.activity_construct_empty_plan.*
 
-class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragListener {
+class EditEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragListener {
 
     companion object {
         private const val LOG_TAG = "ConstructEmptyPlanAct"
@@ -26,7 +25,7 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragL
 
     override var tabbedTable: EmptyTableView? = null
 
-    override var movableTables = hashSetOf<Int>()
+    override var movableTables = hashSetOf<View>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,40 +33,16 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragL
 
         for (child in root) {
             val tag = child.getTag(R.id.drag_disabled) ?: continue
-            if (tag is String)
-                child.setTag(R.id.drag_disabled, tag.toBoolean())
+            if (tag is String) {
+                child.setTag(R.id.drag_disabled, tag == "true")
+            }
         }
 
         slideSideOptionsOut()
 
-        helper_btn.setOnClickListener {
-            Log.d(LOG_TAG, "The coords of all the tables are: ")
-            for (i in 0 until root.childCount) {
-                val child = root.getChildAt(i) as? EmptyTableView ?: continue
-
-                Log.d(LOG_TAG, "x: " + child.x)
-                Log.d(LOG_TAG, "y: " + child.y)
-            }
-        }
-
         //region sideOptions UI controls
-        edit_separators_table.setOnTouchListener { view, event ->
-            if (event.action != MotionEvent.ACTION_DOWN)
-                return@setOnTouchListener false
-
-            (view as? EmptyTableView)?.let {
-                val partition = view.closestPartitionTo(event.x)
-
-                if (!it.separators.contains(partition)) {
-                    it.addSeparator(partition)
-                    tabbedTable?.addSeparator(partition)
-                } else {
-                    it.removeSeparator(partition)
-                    tabbedTable?.removeSeparator(partition)
-                }
-            } ?: return@setOnTouchListener false
-            true
-        }
+        edit_separators_table.setOnTouchListener(
+                TableScene.EditSeparatorsTableOnTouchListener { tabbedTable })
         //endregion
 
         //region scene controls
@@ -85,6 +60,7 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragL
         root.setOnDragListener(this)
     }
 
+    //region OnTableDragListener overrides
     override var displaceInfo: DisplacementInformation? = null
     override var shadowTouchPoint: Point? = null
     override val constraints
@@ -135,20 +111,38 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragL
         return true
     }
 
-    private fun addTable(): Int {
-        return addTable(spawnTable(root, layoutInflater))
+    //region loading
+    fun getTables(): List<EmptyDataTable> {
+        val tables = mutableListOf<EmptyDataTable>()
+        for (child in root) {
+            if (child is EmptyTableView) {
+                val xBias = getBias(child.x, child.width.toFloat(), root.width.toFloat())
+                val yBias = getBias(child.y, child.height.toFloat(), root.height.toFloat())
+                tables.add(EmptyDataTable(xBias, yBias, child.seatCount, child.separators))
+            }
+        }
+        return tables
     }
 
-    override fun addTable(table: EmptyTableView, x: Float, y: Float): Int {
-        val xBias = if (x < 0) {
-            -x / (options_guide.left.toFloat() - table.tableWidth - table.horizontalFrame)
-        } else
-            x
+    fun addTable(table: EmptyDataTable): Int {
+        val view = spawnTable(root, layoutInflater)
+        view.seatCount = table.seatCount
+        view.separators = table.separators
+        return addTable(view, table.xBias, table.yBias)
+    }
+    //endregion
 
-        val yBias = if (y < 0) {
-            -y / (root.height.toFloat() - table.tableHeight - table.verticalFrame)
-        } else
-            y
+    //region sideOption controls
+    private fun addTable() = addTable(spawnTable(root, layoutInflater))
+
+    override fun addTable(table: EmptyTableView, x: Float, y: Float): Int {
+        val xBias = makeBias(x,
+                table.tableWidth - table.horizontalFrame,
+                options_guide.left.toFloat())
+
+        val yBias = makeBias(y,
+                table.tableHeight - table.verticalFrame,
+                root.height.toFloat())
 
         rootConstraints.clone(root)
         rootConstraints.connectTable(table.id, options_guide.id, xBias, yBias)
@@ -167,16 +161,6 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragL
 
     var sideOptionsPresent = true
 
-    private fun toggleSideOptions() {
-        sideOptionsPresent = if (sideOptionsPresent) {
-            slideSideOptionsOut()
-            false
-        } else {
-            slideSideOptionsIn()
-            true
-        }
-    }
-
     override fun slideSideOptionsOut() {
         if (sideOptionsPresent) {
             sideOptionsPresent = false
@@ -187,6 +171,7 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragL
             rootConstraints.applyTo(root)
         }
     }
+
     override fun slideSideOptionsIn() {
         if (!sideOptionsPresent) {
             sideOptionsPresent = true
@@ -198,4 +183,5 @@ class ConstructEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragL
             rootConstraints.applyTo(root)
         }
     }
+    //endregion
 }

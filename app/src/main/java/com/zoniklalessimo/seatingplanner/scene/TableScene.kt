@@ -1,5 +1,6 @@
-package com.zoniklalessimo.seatingplanner
+package com.zoniklalessimo.seatingplanner.scene
 
+import android.annotation.SuppressLint
 import android.graphics.Point
 import android.graphics.PointF
 import android.graphics.RectF
@@ -8,10 +9,10 @@ import android.support.constraint.ConstraintLayout
 import android.support.constraint.ConstraintSet
 import android.support.constraint.Guideline
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import com.zoniklalessimo.seatingplanner.tablePlan.EmptyTableView
-import com.zoniklalessimo.seatingplanner.tablePlan.cut
+import com.zoniklalessimo.seatingplanner.R
 import java.util.*
 import kotlin.experimental.and
 import kotlin.experimental.or
@@ -24,11 +25,25 @@ interface TableScene {
     }
 
     //region helpers
-    fun ConstraintSet.connectTable(tableId: Int, guideId: Int, xBias: Float = 0.5f, yBias: Float = 0.5f) {
-        center(tableId, ConstraintSet.PARENT_ID, ConstraintSet.START, 0,
-                guideId, ConstraintSet.START, 0, xBias)
-        center(tableId, ConstraintSet.PARENT_ID, ConstraintSet.TOP, 0,
-                ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM, 0, yBias)
+    class EditSeparatorsTableOnTouchListener(val tabbedTable: () -> EmptyTableView?) : View.OnTouchListener {
+        @SuppressLint("ClickableViewAccessibility")
+        override fun onTouch(view: View, event: MotionEvent): Boolean {
+            if (event.action != MotionEvent.ACTION_DOWN)
+                return false
+
+            (view as? EmptyTableView)?.let {
+                val partition = view.closestPartitionTo(event.x)
+
+                if (!it.separators.contains(partition)) {
+                    it.addSeparator(partition)
+                    tabbedTable()?.addSeparator(partition)
+                } else {
+                    it.removeSeparator(partition)
+                    tabbedTable()?.removeSeparator(partition)
+                }
+            } ?: return false
+            return true
+        }
     }
 
     var shadowTouchPoint: Point?
@@ -143,6 +158,30 @@ interface TableScene {
     //endregion helpers
 
     //region positioning
+    fun ConstraintSet.connectTable(tableId: Int, guideId: Int, xBias: Float = 0.5f, yBias: Float = 0.5f) {
+        center(tableId, ConstraintSet.PARENT_ID, ConstraintSet.START, 0,
+                guideId, ConstraintSet.START, 0, xBias)
+        center(tableId, ConstraintSet.PARENT_ID, ConstraintSet.TOP, 0,
+                ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM, 0, yBias)
+    }
+
+    /**
+     * Calculate the appropriate bias value
+     *
+     * @param pos The table's position. If this is positive, it is treated, as-is, as the bias, if it's
+     * negative, the real bias is calculated and returned
+     * @param length The length of the table
+     * @param size The length or height of the container
+     */
+    fun makeBias(pos: Float, length: Float, size: Float) = if (pos < 0)
+    // Don't use length and height values because those may not be calculated yet
+    // if the table comes from a movable drag
+        getBias(pos, length, size)
+    else
+        pos
+
+    fun getBias(pos: Float, length: Float, size: Float) = pos / (size - length)
+
     fun ConstraintSet.prepareConstraintsForDrag(table: EmptyTableView) {
         clear(table.id)
         connect(table.id, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START, table.left)
@@ -165,7 +204,7 @@ interface TableScene {
     }
     //endregion
 
-    //region Highlights
+    //region Highlighting
     fun slideSideOptionsIn()
     fun slideSideOptionsOut()
 
@@ -216,7 +255,7 @@ interface TableScene {
     //endregion
 
     //region Movable
-    val movableTables: HashSet<Int>
+    val movableTables: HashSet<View>
 
     fun EmptyTableView.setMovable(@Suppress("DEPRECATION") color: Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
                                                 context.getColor(R.color.tableMoveHighlight) else
@@ -224,13 +263,13 @@ interface TableScene {
         if (isTabbed())
             resetTabbedWithoutHighlight()
         highlight(color)
-        movableTables.add(id)
+        movableTables.add(this)
         this.setTag(R.id.table_state, ActionState.MOVABLE)
     }
 
-    fun resetMovables(root: ConstraintLayout) {
+    fun resetMovables() {
         movableTables.forEach {
-            val movable = (root.getViewById(it) as? EmptyTableView) ?: return@forEach
+            val movable = (it as? EmptyTableView) ?: return@forEach
             movable.resetHighlight()
             movable.setTag(R.id.table_state, ActionState.NONE)
         }
@@ -245,13 +284,13 @@ interface TableScene {
     fun EmptyTableView.resetMovableWithoutHighlight() {
         // When making changes here, make sure to check
         // if you need to make those in [resetMovables()] as well
-        if (movableTables.contains(id)) {
+        if (movableTables.contains(this)) {
             setTag(R.id.table_state, ActionState.NONE)
-            movableTables.remove(id)
+            movableTables.remove(this)
         }
     }
 
-    fun EmptyTableView.isMovable() = if (movableTables.contains(id)) {
+    fun EmptyTableView.isMovable() = if (movableTables.contains(this)) {
         setTag(R.id.table_state, ActionState.MOVABLE)
         true
     } else {
@@ -266,7 +305,7 @@ interface TableScene {
     }
 
     fun resetActionStates(root: ConstraintLayout) {
-        resetMovables(root)
+        resetMovables()
         resetTabbed()
     }
 

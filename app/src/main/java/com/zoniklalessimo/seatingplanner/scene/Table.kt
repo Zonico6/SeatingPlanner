@@ -1,4 +1,4 @@
-package com.zoniklalessimo.seatingplanner
+package com.zoniklalessimo.seatingplanner.scene
 
 import java.util.*
 

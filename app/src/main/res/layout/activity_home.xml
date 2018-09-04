@@ -7,7 +7,7 @@
     android:layout_height="match_parent"
     tools:context=".HomeActivity">
 
-    <com.zoniklalessimo.seatingplanner.tablePlan.EmptyTableView
+    <com.zoniklalessimo.seatingplanner.scene.EmptyTableView
         android:id="@+id/sample_table"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -24,5 +24,20 @@
         app:seatColor="#974b02"
         app:seatCount="7"
         app:seatHeight="60dp" />
+
+    <Button
+        android:id="@+id/choose_table_plan"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
+        android:onClick="displayChooseTablePlanDialog"
+        android:text="Choose tb"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/sample_table" />
 
 </android.support.constraint.ConstraintLayout>

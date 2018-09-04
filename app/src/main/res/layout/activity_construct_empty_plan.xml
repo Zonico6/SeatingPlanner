@@ -5,7 +5,7 @@
     android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".tablePlan.ConstructEmptyPlanActivity">
+    tools:context=".EditEmptyPlanActivity">
 
     <android.support.constraint.Group
         android:id="@+id/options_group"
@@ -106,7 +106,7 @@
         app:layout_constraintStart_toStartOf="@+id/options_guide"
         app:layout_constraintTop_toBottomOf="@+id/remove_seat_btn" />
 
-    <com.zoniklalessimo.seatingplanner.tablePlan.EmptyTableView
+    <com.zoniklalessimo.seatingplanner.scene.EmptyTableView
         android:id="@+id/edit_separators_table"
         android:layout_width="0dp"
         android:layout_height="40dp"
@@ -129,6 +129,6 @@
         <tag
             android:id="@id/drag_disabled"
             android:value="true" />
-    </com.zoniklalessimo.seatingplanner.tablePlan.EmptyTableView>
+    </com.zoniklalessimo.seatingplanner.scene.EmptyTableView>
 
 </android.support.constraint.ConstraintLayout>
