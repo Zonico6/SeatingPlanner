@@ -7,14 +7,13 @@ import androidx.lifecycle.ViewModelProvider
 import java.io.File
 import java.io.FileReader
 
-class ChoosePlanDialogViewModel(val src: File) : ViewModel() {
+class ChoosePlanDialogViewModel(val src: File, private val planDirectory: File?) : ViewModel() {
     private var entries = MutableLiveData<List<ChoosePlanEntry>>()
 
     init {
         entries = MutableLiveData()
         fetchEntries(src)
     }
-
 
     fun getEntries(): LiveData<List<ChoosePlanEntry>> = entries
     fun setEntries(value: List<ChoosePlanEntry>) {
@@ -33,6 +32,17 @@ class ChoosePlanDialogViewModel(val src: File) : ViewModel() {
         } else false
     }
 
+    /**
+     * Create a new TablePlan with the associated file and return said file
+     */
+    fun createPlan(name: String): ChoosePlanEntry {
+        val plan = EmptyDataTablePlan(name, listOf(EmptyDataTable(0.5f, 0.5f, 4)), File(planDirectory, name))
+        plan.save()
+        val entry = ChoosePlanEntry(plan)
+        addEntry(entry)
+        return entry
+    }
+
     private fun fetchEntries(file: File) {
         val input = FileReader(file)
         val content = input.readText()
@@ -47,7 +57,7 @@ class ChoosePlanDialogViewModel(val src: File) : ViewModel() {
                 separatorCount++
             }
             if (separatorCount == ChoosePlanEntry.SEPARATORS_PER_ENTRY + ChoosePlanEntry.ROW_DIGITS + ChoosePlanEntry.SEATS_DIGITS) {
-                ret += (ChoosePlanEntry).parse(entryString)
+                ret += (ChoosePlanEntry).parse(entryString, planDirectory)
                 separatorCount = 0
                 entryString = String()
             }
@@ -55,16 +65,21 @@ class ChoosePlanDialogViewModel(val src: File) : ViewModel() {
 
         entries.value = ret
     }
+
 }
 
-class ChoosePlanModelFactory(private val entrySrc: File) : ViewModelProvider.Factory {
+class ChoosePlanModelFactory(private val entrySrc: File, private val planDirectory: File?) : ViewModelProvider.Factory {
     override fun <T : ViewModel?> create(modelClass: Class<T>): T {
         @Suppress("UNCHECKED_CAST")
-        return ChoosePlanDialogViewModel(entrySrc) as T
+        return ChoosePlanDialogViewModel(entrySrc, planDirectory) as T
     }
 }
 
 data class ChoosePlanEntry(val name: String, val rows: Int, val seats: Int, val src: File) {
+    constructor(plan: EmptyDataTablePlan, src: File? = plan.src) : this(plan.name, plan.tables.count(), plan.tables.sumBy { it.seatCount },
+            src
+                ?: throw IllegalArgumentException("No source-file argument supplied that wasn't null."))
+
     // Format: name|src|3-digits-rows 3-digits-seats
     companion object {
         const val SEPARATORS_PER_ENTRY = 2
@@ -72,7 +87,7 @@ data class ChoosePlanEntry(val name: String, val rows: Int, val seats: Int, val 
         const val ROW_DIGITS = 3
         const val SEATS_DIGITS = 3
 
-        fun parse(input: String): ChoosePlanEntry {
+        fun parse(input: String, planDirectory: File?): ChoosePlanEntry {
             var name: String? = null
             var src: String? = null
             var rows: Int = -1
@@ -102,7 +117,15 @@ data class ChoosePlanEntry(val name: String, val rows: Int, val seats: Int, val 
                     else -> segment += c
                 }
             }
-            return ChoosePlanEntry(name as String, rows, seats, File(src as String))
+            return ChoosePlanEntry(name as String, rows, seats, if (planDirectory == null) File(src as String) else File(planDirectory, src as String))
         }
+    }
+
+    /**
+     * Parses the file until it finds an entry that matches the src file of this entry and
+     * then updates it's properties with those it finds in the file.
+     */
+    fun update(file: File): Boolean {
+        TODO()
     }
 }
