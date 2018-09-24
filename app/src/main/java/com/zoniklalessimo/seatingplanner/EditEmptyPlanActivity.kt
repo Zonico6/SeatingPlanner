@@ -8,14 +8,17 @@ import android.transition.TransitionManager
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.iterator
 import com.zoniklalessimo.seatingplanner.choosing.EmptyDataTable
+import com.zoniklalessimo.seatingplanner.choosing.EmptyDataTablePlan
 import com.zoniklalessimo.seatingplanner.scene.DisplacementInformation
 import com.zoniklalessimo.seatingplanner.scene.EmptyTableView
 import com.zoniklalessimo.seatingplanner.scene.OnTableDragListener
 import com.zoniklalessimo.seatingplanner.scene.TableScene
 import kotlinx.android.synthetic.main.activity_construct_empty_plan.*
+import java.io.File
 
 class EditEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragListener {
 
@@ -27,10 +30,15 @@ class EditEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragListen
 
     override var movableTables = hashSetOf<View>()
 
+    lateinit var title: String
+
+    lateinit var src: File
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_construct_empty_plan)
 
+        // Map xml tag types to usable tag types
         for (child in root) {
             val tag = child.getTag(R.id.drag_disabled) ?: continue
             if (tag is String) {
@@ -50,8 +58,19 @@ class EditEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragListen
             resetActionStates(root)
         }
 
-        // Spawn one table because an empty scene is intimidating
-        addTable()
+        if (savedInstanceState == null) {
+            val planData = intent.getSerializableExtra(resources.getString(R.string.table_plan_extra)) as EmptyDataTablePlan
+            title = planData.name
+            src = planData.src as File
+
+            planData.tables.forEach {
+                addTable(it)
+            }
+        } else {
+            src = savedInstanceState.getSerializable(resources.getString(R.string.src_extra)) as File
+            title = savedInstanceState.getString(resources.getString(R.string.name_extra))
+        }
+
         //endregion scene controls
 
         optionsGuideEnd = resources.getDimension(R.dimen.side_options_width_empty_plan).toInt()
@@ -59,7 +78,6 @@ class EditEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragListen
         //region Drag and Drop Listener
         root.setOnDragListener(this)
     }
-
     //region OnTableDragListener overrides
     override var displaceInfo: DisplacementInformation? = null
     override var shadowTouchPoint: Point? = null
@@ -68,6 +86,50 @@ class EditEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragListen
     override val optionsGuide: Guideline
         get() = options_guide
     //endregion
+
+    override fun onSaveInstanceState(outState: Bundle?) {
+        super.onSaveInstanceState(outState)
+        outState ?: return
+        outState.putSerializable(resources.getString(R.string.src_extra), src)
+        outState.putString(resources.getString(R.string.name_extra), title)
+    }
+
+    override fun onPause() {
+        super.onPause()
+
+        save()
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        // android docs: https://developer.android.com/guide/topics/ui/menus.html
+        val inflater = menuInflater
+        inflater.inflate(R.menu.add_table_empty_plan_menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+        when (item!!.itemId) {
+            R.id.add_empty_table -> {
+                addTable()
+            }
+            R.id.save -> {
+                save()
+            }
+            R.id.save_as -> {
+                // TODO
+                save()
+            }
+            else -> return super.onOptionsItemSelected(item)
+        }
+        return true
+    }
+
+    private fun save(location: File? = null) {
+        val plan = EmptyDataTablePlan(title, getTables(), location ?: src)
+        plan.save()
+
+        Toast.makeText(this, R.string.saved_msg, Toast.LENGTH_LONG).show()
+    }
 
     //region Xml callbacks
     fun addSeatToTabbed(v: View) {
@@ -94,23 +156,6 @@ class EditEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragListen
     }
     //endregion
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        // android docs: https://developer.android.com/guide/topics/ui/menus.html
-        val inflater = menuInflater
-        inflater.inflate(R.menu.add_table_empty_plan_menu, menu)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-        when (item!!.itemId) {
-            R.id.add_empty_table -> {
-                addTable()
-            }
-            else -> return super.onOptionsItemSelected(item)
-        }
-        return true
-    }
-
     //region loading
     fun getTables(): List<EmptyDataTable> {
         val tables = mutableListOf<EmptyDataTable>()
@@ -124,11 +169,12 @@ class EditEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragListen
         return tables
     }
 
-    fun addTable(table: EmptyDataTable): Int {
-        val view = spawnTable(root, layoutInflater)
-        view.seatCount = table.seatCount
-        view.separators = table.separators
-        return addTable(view, table.xBias, table.yBias)
+    fun addTable(table: EmptyDataTable) = addTable(table, spawnTable(root, layoutInflater))
+
+    fun addTable(data: EmptyDataTable, table: EmptyTableView): Int {
+        table.seatCount = data.seatCount
+        table.separators = data.separators
+        return addTable(table, data.xBias, data.yBias)
     }
     //endregion
 
