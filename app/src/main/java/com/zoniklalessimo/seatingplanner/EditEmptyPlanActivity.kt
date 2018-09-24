@@ -11,6 +11,7 @@ import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.iterator
+import com.zoniklalessimo.seatingplanner.choosing.ChoosePlanEntry
 import com.zoniklalessimo.seatingplanner.choosing.EmptyDataTable
 import com.zoniklalessimo.seatingplanner.choosing.EmptyDataTablePlan
 import com.zoniklalessimo.seatingplanner.scene.DisplacementInformation
@@ -33,6 +34,8 @@ class EditEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragListen
     lateinit var title: String
 
     lateinit var src: File
+
+    lateinit var entryFile: File
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,6 +60,8 @@ class EditEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragListen
         root.setOnClickListener {
             resetActionStates(root)
         }
+
+        entryFile = intent.getSerializableExtra(getString(R.string.entry_file_extra)) as File
 
         if (savedInstanceState == null) {
             val planData = intent.getSerializableExtra(resources.getString(R.string.table_plan_extra)) as EmptyDataTablePlan
@@ -127,6 +132,8 @@ class EditEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragListen
     private fun save(location: File? = null) {
         val plan = EmptyDataTablePlan(title, getTables(), location ?: src)
         plan.save()
+
+        ChoosePlanEntry(plan).update(entryFile)
 
         Toast.makeText(this, R.string.saved_msg, Toast.LENGTH_LONG).show()
     }

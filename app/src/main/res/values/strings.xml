@@ -12,7 +12,8 @@
     <string name="table_plan_extra">plan_src</string>
     <string name="src_extra">data_source</string>
     <string name="name_extra">data_name</string>
-    <string name="entry_src_extra">entry_src_file</string>
+    <string name="entry_file_extra">entry_src_file</string>
+    <string name="empty_table_plan_dir">emptytableplandir</string>
     <string name="save_as">Save As</string>
     <string name="save">Save</string>
     <string name="saved_msg">Plan was saved</string>

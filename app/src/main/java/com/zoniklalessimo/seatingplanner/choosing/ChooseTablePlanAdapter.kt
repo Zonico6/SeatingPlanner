@@ -68,7 +68,7 @@ class ChooseTablePlanAdapter(private val context: Context, private val model: Ch
         }
 
         holder.add.setOnClickListener {
-            model.addEntry()
+            model.createPlan(holder.title.text.toString())
         }
 
         return view

@@ -63,7 +63,7 @@ class EmptyDataTablePlan(val name: String, val tables: Iterable<EmptyDataTable>,
     }
 }
 
-data class EmptyDataTable(val xBias: Float, val yBias: Float, override var seatCount: Int, override var separators: SortedSet<Int>) : Table {
+data class EmptyDataTable(val xBias: Float, val yBias: Float, override var seatCount: Int, override var separators: SortedSet<Int> = sortedSetOf()) : Table {
     companion object {
         fun fromJson(reader: JsonReader): EmptyDataTable {
             var x = -1f

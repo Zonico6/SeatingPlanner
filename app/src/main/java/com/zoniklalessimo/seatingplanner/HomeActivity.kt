@@ -23,7 +23,7 @@ class HomeActivity : AppCompatActivity() {
     fun displayChooseTablePlanDialog(view: View) {
         with(ChooseEmptyTablePlanDialogFragment()) {
             arguments = Bundle().apply {
-                putSerializable(getString(R.string.entry_src_extra), File("PlanEntries"))
+                putSerializable(getString(R.string.entry_file_extra), File("PlanEntries"))
             } // TODO: Don't fucking hardcode
             show(supportFragmentManager, "choose_plan_dialog")
         }

@@ -13,7 +13,9 @@ import java.io.File
 
 class ChooseEmptyTablePlanDialogFragment : DialogFragment() {
     private val model: ChoosePlanDialogViewModel = run {
-        val factory = ChoosePlanModelFactory(arguments!![getString(R.string.entry_src_extra)] as File)
+        val factory = ChoosePlanModelFactory(
+                arguments!![getString(R.string.entry_file_extra)] as File,
+                arguments!![getString(R.string.empty_table_plan_dir)] as File)
 
         ViewModelProviders.of(this, factory).get(ChoosePlanDialogViewModel::class.java)
     }
