@@ -6,6 +6,7 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.zoniklalessimo.seatingplanner.choosing.ChooseEmptyTablePlanDialogFragment
 import kotlinx.android.synthetic.main.activity_home.*
+import java.io.File
 
 class HomeActivity : AppCompatActivity() {
 
@@ -20,6 +21,11 @@ class HomeActivity : AppCompatActivity() {
     }
 
     fun displayChooseTablePlanDialog(view: View) {
-        ChooseEmptyTablePlanDialogFragment().show(supportFragmentManager, "choose_plan_dialog")
+        with(ChooseEmptyTablePlanDialogFragment()) {
+            arguments = Bundle().apply {
+                putSerializable(getString(R.string.entry_src_extra), File("PlanEntries"))
+            } // TODO: Don't fucking hardcode
+            show(supportFragmentManager, "choose_plan_dialog")
+        }
     }
 }

@@ -7,10 +7,16 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
+import com.zoniklalessimo.seatingplanner.EditEmptyPlanActivity
 import com.zoniklalessimo.seatingplanner.R
+import java.io.File
 
 class ChooseEmptyTablePlanDialogFragment : DialogFragment() {
-    private val model: ChoosePlanDialogViewModel = ViewModelProviders.of(this).get(ChoosePlanDialogViewModel::class.java)
+    private val model: ChoosePlanDialogViewModel = run {
+        val factory = ChoosePlanModelFactory(arguments!![getString(R.string.entry_src_extra)] as File)
+
+        ViewModelProviders.of(this, factory).get(ChoosePlanDialogViewModel::class.java)
+    }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val adapter = ChooseTablePlanAdapter(context!!, model)
@@ -19,8 +25,8 @@ class ChooseEmptyTablePlanDialogFragment : DialogFragment() {
         })
         val builder = AlertDialog.Builder(context!!).setAdapter(adapter) { _, i ->
             val src = model.getEntries().value!![i].src
-            val intent = Intent()
-            intent.putExtra(context!!.getString(R.string.edit_table_plan_extra), EmptyDataTablePlan(src))
+            val intent = Intent(context, EditEmptyPlanActivity::class.java)
+            intent.putExtra(context!!.getString(R.string.table_plan_extra), EmptyDataTablePlan.fromSaveFile(src))
             startActivity(intent)
         }
         return builder.create()

@@ -8,8 +8,29 @@ import java.util.*
 
 // TODO: Store the key names of the json properties somewhere central, maybe SharedPreferences
 
-class EmptyDataTablePlan(val src: File, reader: JsonReader) : Serializable {
+class EmptyDataTablePlan(val name: String, val tables: Iterable<EmptyDataTable>, val src: File? = null) : Serializable {
     companion object {
+
+        fun fromSaveFile(src: File): EmptyDataTablePlan {
+            val tables = mutableListOf<EmptyDataTable>()
+
+            val reader = JsonReader(InputStreamReader(FileInputStream(src)))
+            reader.beginObject()
+            var nameVal = ""
+            while (reader.hasNext()) {
+                when (reader.nextName()) {
+                    "name" -> nameVal = reader.nextString()
+                    "tables" -> tables.addAll(readTables(reader))
+                    else -> reader.skipValue()
+                }
+            }
+            reader.endObject()
+            val name = nameVal
+            reader.close()
+
+            return EmptyDataTablePlan(name, tables, src)
+        }
+
         fun readTables(reader: JsonReader): Array<EmptyDataTable> {
             val tables = mutableListOf<EmptyDataTable>()
             reader.beginArray()
@@ -31,36 +52,18 @@ class EmptyDataTablePlan(val src: File, reader: JsonReader) : Serializable {
         }
     }
 
-    constructor(src: File) : this(
-            src,
-            JsonReader(InputStreamReader(FileInputStream(src))))
-
-    val tables = mutableListOf<EmptyDataTable>()
-    val name: String
-
-    init {
-        reader.beginObject()
-        var nameVal = ""
-        while (reader.hasNext()) {
-            when (reader.nextName()) {
-                "name" -> nameVal = reader.nextString()
-                "tables" -> tables.addAll(readTables(reader))
-                else -> reader.skipValue()
-            }
-        }
-        reader.endObject()
-        name = nameVal
-        reader.close()
-    }
-
-    fun save() {
-        val writer = OutputStreamWriter(FileOutputStream(src), "UTF-8")
-        saveTables(JsonWriter(writer), tables)
+    fun save(location: File? = null) {
+        val file = location ?: src
+        ?: throw IllegalStateException("Both the stored and supplied file were null.")
+        val writer = OutputStreamWriter(FileOutputStream(file), "UTF-8")
+        val json = JsonWriter(writer)
+        json.name("name").value(name)
+        saveTables(json, tables)
         writer.close()
     }
 }
 
-class EmptyDataTable(val xBias: Float, val yBias: Float, override var seatCount: Int, override var separators: SortedSet<Int>) : Table {
+data class EmptyDataTable(val xBias: Float, val yBias: Float, override var seatCount: Int, override var separators: SortedSet<Int>) : Table {
     companion object {
         fun fromJson(reader: JsonReader): EmptyDataTable {
             var x = -1f

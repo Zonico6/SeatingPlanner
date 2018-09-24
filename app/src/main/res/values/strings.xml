@@ -9,5 +9,13 @@
     <string name="remove_seat_description">Add a seat to the selected table.</string>
     <string name="add_seat_description">Add a seat to the selected view.</string>
     <string name="delete">Delete</string>
-    <string name="edit_table_plan_extra">plan_src</string>
+    <string name="table_plan_extra">plan_src</string>
+    <string name="src_extra">data_source</string>
+    <string name="name_extra">data_name</string>
+    <string name="entry_src_extra">entry_src_file</string>
+    <string name="save_as">Save As</string>
+    <string name="save">Save</string>
+    <string name="saved_msg">Plan was saved</string>
+    <string name="add_entry_description">Add a new plan with the supplied title.</string>
+    <string name="title">Title</string>
 </resources>

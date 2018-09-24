@@ -3,21 +3,34 @@ package com.zoniklalessimo.seatingplanner.choosing
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import java.io.File
 import java.io.FileReader
-import kotlin.properties.Delegates.observable
 
-class ChoosePlanDialogViewModel : ViewModel() {
-
+class ChoosePlanDialogViewModel(val src: File) : ViewModel() {
     private var entries = MutableLiveData<List<ChoosePlanEntry>>()
 
-    fun getEntries(): LiveData<List<ChoosePlanEntry>> = entries
+    init {
+        entries = MutableLiveData()
+        fetchEntries(src)
+    }
 
-    var src: File? by observable(null as File?) { _, _, new ->
-        if (new != null)
-            fetchEntries(new)
-        else
-            entries = MutableLiveData()
+
+    fun getEntries(): LiveData<List<ChoosePlanEntry>> = entries
+    fun setEntries(value: List<ChoosePlanEntry>) {
+        entries.value = value
+    }
+
+    fun addEntry(entry: ChoosePlanEntry) {
+        entries.value = entries.value ?: listOf(entry)
+    }
+
+    fun removeEntry(entry: ChoosePlanEntry): Boolean {
+        val old = entries.value
+        return if (old != null && old.contains(entry)) {
+            entries.value = old - entry
+            true
+        } else false
     }
 
     private fun fetchEntries(file: File) {
@@ -41,6 +54,13 @@ class ChoosePlanDialogViewModel : ViewModel() {
         }
 
         entries.value = ret
+    }
+}
+
+class ChoosePlanModelFactory(private val entrySrc: File) : ViewModelProvider.Factory {
+    override fun <T : ViewModel?> create(modelClass: Class<T>): T {
+        @Suppress("UNCHECKED_CAST")
+        return ChoosePlanDialogViewModel(entrySrc) as T
     }
 }
 

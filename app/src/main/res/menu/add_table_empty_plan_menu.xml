@@ -1,11 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
-        android:id="@+id/add_empty_table"
+        android:id="@+id/save"
+        android:orderInCategory="1"
+        android:title="@string/save"
         app:showAsAction="ifRoom"
+        tools:icon="@drawable/ic_save_black_24dp" />
+    <item
+        android:id="@+id/save_as"
+        android:orderInCategory="2"
+        android:title="@string/save_as"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/add_empty_table"
+        app:showAsAction="always"
         app:icon="@drawable/ic_add_box_black_24dp"
         android:title="@string/add"
-        android:orderInCategory="1"
-        />
+        android:orderInCategory="1" />
 </menu>
