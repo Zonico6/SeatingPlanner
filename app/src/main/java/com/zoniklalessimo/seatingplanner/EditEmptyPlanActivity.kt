@@ -164,7 +164,7 @@ class EditEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragListen
     //endregion
 
     //region loading
-    fun getTables(): List<EmptyDataTable> {
+    private fun getTables(): List<EmptyDataTable> {
         val tables = mutableListOf<EmptyDataTable>()
         for (child in root) {
             if (child is EmptyTableView) {
@@ -176,9 +176,9 @@ class EditEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragListen
         return tables
     }
 
-    fun addTable(table: EmptyDataTable) = addTable(table, spawnTable(root, layoutInflater))
+    private fun addTable(table: EmptyDataTable) = addTable(table, spawnTable(root, layoutInflater))
 
-    fun addTable(data: EmptyDataTable, table: EmptyTableView): Int {
+    private fun addTable(data: EmptyDataTable, table: EmptyTableView): Int {
         table.seatCount = data.seatCount
         table.separators = data.separators
         return addTable(table, data.xBias, data.yBias)
