@@ -2,14 +2,36 @@ package com.zoniklalessimo.seatingplanner.scene
 
 import android.support.constraint.ConstraintSet
 import android.support.constraint.Guideline
+import android.util.Log
 
 interface TablePlacer {
+    companion object {
+        const val LOG_TAG = "TablePlacer"
+    }
+
+    // Make sure the biases are within range
+    private fun checkBias(bias: Float): Float =
+            when {
+                bias < 0 -> {
+                    Log.e(LOG_TAG, "Bias was less than 0: $bias")
+                    0.001f
+                }
+                bias > 1 -> {
+                    Log.e(LOG_TAG, "Bias was more than 1: $bias")
+                    1f
+                }
+                else -> bias
+            }
+
     //region positioning
     fun ConstraintSet.connectTable(tableId: Int, guideId: Int, xBias: Float = 0.5f, yBias: Float = 0.5f) {
+        val biasX = checkBias(xBias)
+        val biasY = checkBias(yBias)
+
         center(tableId, ConstraintSet.PARENT_ID, ConstraintSet.START, 0,
-                guideId, ConstraintSet.START, 0, xBias)
+                guideId, ConstraintSet.START, 0, biasX)
         center(tableId, ConstraintSet.PARENT_ID, ConstraintSet.TOP, 0,
-                ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM, 0, yBias)
+                ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM, 0, biasY)
     }
 
     /**
@@ -23,7 +45,7 @@ interface TablePlacer {
     fun makeBias(pos: Float, length: Float, size: Float) = if (pos < 0)
     // Don't use length and height values because those may not be calculated yet
     // if the table comes from a movable drag
-        getBias(pos, length, size)
+        getBias(-pos, length, size)
     else
         pos
 
@@ -36,18 +58,10 @@ interface TablePlacer {
     }
 
     fun ConstraintSet.restoreBiases(table: EmptyTableView, sideGuide: Guideline, height: Float) {
-        var xBias = table.x / (sideGuide.left - table.width).toFloat()
-        var yBias = table.y / (height - table.height)
+        val xBias = getBias(table.x, table.width + 0f, sideGuide.left + 0f)
+        val yBias = getBias(table.y, table.height.toFloat(), height)
 
-        // Make sure biases are between 0 and 1
-        xBias = Math.min(Math.max(xBias, 0.0000000000001f), 0.999999999999f)
-        yBias = Math.min(Math.max(yBias, 0.0000000000001f), 0.999999999999f)
-
-
-        center(table.id, ConstraintSet.PARENT_ID, ConstraintSet.START, 0,
-                sideGuide.id, ConstraintSet.START, 0, xBias)
-        center(table.id, ConstraintSet.PARENT_ID, ConstraintSet.TOP, 0,
-                ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM, 0, yBias)
+        connectTable(table.id, sideGuide.id, xBias, yBias)
     }
     //endregion
 }

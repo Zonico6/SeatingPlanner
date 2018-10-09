@@ -11,7 +11,6 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import com.zoniklalessimo.seatingplanner.R
 import java.util.*
 
 interface TableScene : ActionStateUser, TablePlacer {
@@ -131,14 +130,15 @@ interface TableScene : ActionStateUser, TablePlacer {
                     return addTable(newTable, -table.left - xOffset, -table.top + 0f)
                 }
 
-                // First is the new table AFTER the touch
+                // Create the table after the touch
+                // It's probably best if we don't change the order (After/Before first)
                 var sep = table.separatorAfterSeat(seat)
                 if (sep != table.seatCount) {
                     makeNewTable(table.seatCount - sep,
                             table.separatorsFromSeat(seat), sep * table.seatWidth)
                 }
 
-                // Then the table BEFORE it
+                // Create the table before the touch
                 sep = table.separatorBeforeSeat(seat)
                 if (sep != 0) {
                     makeNewTable(sep, table.separatorsToSeat(seat), 0f)

@@ -1,29 +1,31 @@
 package com.zoniklalessimo.seatingplanner.choosing
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import java.io.File
 import java.io.FileOutputStream
 import java.io.FileReader
 import java.io.RandomAccessFile
+import kotlin.math.max
 
-class ChoosePlanDialogViewModel(val src: File, private val planDirectory: File?) : ViewModel() {
-    private var entries = MutableLiveData<List<ChoosePlanEntry>>()
+interface ChoosePlanDialogViewModel {
+    val emptyPlanDir: File
+    val emptyPlanEntries: File
+    val entries: MutableLiveData<List<ChoosePlanEntry>>
 
-    init {
-        entries = MutableLiveData()
-        fetchEntries(src)
-    }
-
-    fun getEntries(): LiveData<List<ChoosePlanEntry>> = entries
-    fun setEntries(value: List<ChoosePlanEntry>) {
-        entries.value = value
+    fun getEntries(): LiveData<List<ChoosePlanEntry>> {
+        if (entries.value == null) {
+            fetchEntries(emptyPlanEntries)
+        }
+        return entries
     }
 
     fun addEntry(entry: ChoosePlanEntry) {
-        entries.value = entries.value ?: listOf(entry)
+        if (entries.value == null) {
+            entries.value = emptyList()
+        }
+        entries.value = entries.value?.plus(entry) ?: listOf(entry)
     }
 
     fun removeEntry(entry: ChoosePlanEntry): Boolean {
@@ -35,10 +37,40 @@ class ChoosePlanDialogViewModel(val src: File, private val planDirectory: File?)
     }
 
     /**
-     * Create a new TablePlan with the associated file and return said file
+     * Create a new TablePlan with the associated file, add the entry and return said file
      */
     fun createPlan(name: String): ChoosePlanEntry {
-        val plan = EmptyDataTablePlan(name, listOf(EmptyDataTable(0.5f, 0.5f, 4)), File(planDirectory, name))
+        var number = 0
+
+        for (e in entries.value ?: emptyList()) {
+            val other = e.src.nameWithoutExtension
+
+            val otherNumber = StringBuilder(3)
+            val otherName = StringBuilder(other.length - 3)
+            var parsingNumber = true
+            for (c in other) {
+                if (!c.isDigit())
+                    parsingNumber = false
+                if (parsingNumber)
+                    otherNumber.append(c)
+                else
+                    otherName.append(c)
+            }
+
+            if (name == otherName.toString()) {
+                number = max(number, otherNumber.toString().toInt())
+            }
+        }
+        number += 1
+
+        val file = File(emptyPlanDir, number.toString() + name)
+
+        Log.d("fkjdlalkfsdö", file.toString())
+
+        if (!file.exists())
+            file.createNewFile()
+
+        val plan = EmptyDataTablePlan(name, listOf(EmptyDataTable(0.5f, 0.5f, 4)), file)
         plan.save()
         val entry = ChoosePlanEntry(plan)
         addEntry(entry)
@@ -59,7 +91,7 @@ class ChoosePlanDialogViewModel(val src: File, private val planDirectory: File?)
                 separatorCount++
             }
             if (separatorCount == ChoosePlanEntry.SEPARATORS_PER_ENTRY + ChoosePlanEntry.ROW_DIGITS + ChoosePlanEntry.SEATS_DIGITS) {
-                ret += (ChoosePlanEntry).parse(entryString, planDirectory)
+                ret += (ChoosePlanEntry).parse(entryString, emptyPlanDir)
                 separatorCount = 0
                 entryString = String()
             }
@@ -68,30 +100,23 @@ class ChoosePlanDialogViewModel(val src: File, private val planDirectory: File?)
         entries.value = ret
     }
 
-    override fun onCleared() {
+    fun onCleared() {
         val builder = StringBuilder(entries.value?.size ?: 0 * 30)
         entries.value?.forEach {
             builder.append(it.toSaveString())
         }
-        val output = FileOutputStream(src)
+        val output = FileOutputStream(emptyPlanEntries)
         output.write(builder.toString().toByteArray())
         output.close()
-    }
-}
-
-class ChoosePlanModelFactory(private val entrySrc: File, private val planDirectory: File?) : ViewModelProvider.Factory {
-    override fun <T : ViewModel?> create(modelClass: Class<T>): T {
-        @Suppress("UNCHECKED_CAST")
-        return ChoosePlanDialogViewModel(entrySrc, planDirectory) as T
     }
 }
 
 data class ChoosePlanEntry(val name: String, val rows: Int, val seats: Int, val src: File) {
     constructor(plan: EmptyDataTablePlan, src: File? = plan.src) : this(plan.name, plan.tables.count(), plan.tables.sumBy { it.seatCount },
             src
-                ?: throw IllegalArgumentException("No source-file argument supplied that wasn't null."))
+                ?: throw IllegalStateException("Neither then plan had a source file saved, nor was one supplied."))
 
-    // Format: name|src|3-digits-rows 3-digits-seats
+    // Format: name|entryFile|3-digits-rows 3-digits-seats
     // Example: Old Room␟old_room_plan.txt␟004015
     companion object {
         const val SEPARATORS_PER_ENTRY = 2
@@ -169,7 +194,7 @@ data class ChoosePlanEntry(val name: String, val rows: Int, val seats: Int, val 
     }
 
     /**
-     * Parses the file until it finds an entry that matches the src file of this entry and
+     * Parses the file until it finds an entry that matches the entryFile file of this entry and
      * then updates it's properties with those it finds in the file.
      */
     fun update(file: File): Boolean {

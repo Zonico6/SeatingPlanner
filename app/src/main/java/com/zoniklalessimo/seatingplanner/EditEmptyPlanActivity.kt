@@ -61,10 +61,11 @@ class EditEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragListen
             resetActionStates(root)
         }
 
-        entryFile = intent.getSerializableExtra(getString(R.string.entry_file_extra)) as File
+        entryFile = intent.getSerializableExtra(getString(R.string.entry_file_extra)) as? File ?: throw Exception("Entry file not specified in the intent.")
 
         if (savedInstanceState == null) {
-            val planData = intent.getSerializableExtra(resources.getString(R.string.table_plan_extra)) as EmptyDataTablePlan
+            val planData =
+                    intent.getParcelableExtra(resources.getString(R.string.table_plan_extra)) as EmptyDataTablePlan
             title = planData.name
             src = planData.src as File
 

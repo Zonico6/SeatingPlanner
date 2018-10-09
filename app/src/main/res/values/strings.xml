@@ -17,6 +17,9 @@
     <string name="save_as">Save As</string>
     <string name="save">Save</string>
     <string name="saved_msg">Plan was saved</string>
+    <string name="no_blank_or_empty_title">The title must not be empty and consist of more than whitespaces</string>
     <string name="add_entry_description">Add a new plan with the supplied title.</string>
     <string name="title">Title</string>
+    <string name="choose_empty_plan_dialog_title">Choose A Plan</string>
+    <string name="view_model">ViewModel</string>
 </resources>

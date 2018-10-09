@@ -1,5 +1,7 @@
 package com.zoniklalessimo.seatingplanner.choosing
 
+import android.os.Parcel
+import android.os.Parcelable
 import android.util.JsonReader
 import android.util.JsonWriter
 import com.zoniklalessimo.seatingplanner.scene.Table
@@ -8,8 +10,17 @@ import java.util.*
 
 // TODO: Store the key names of the json properties somewhere central, maybe SharedPreferences
 
-class EmptyDataTablePlan(val name: String, val tables: Iterable<EmptyDataTable>, val src: File? = null) : Serializable {
+// TODO: Add Parcelable implementation
+data class EmptyDataTablePlan(val name: String, val tables: Iterable<EmptyDataTable>, val src: File? = null) : Parcelable {
     companion object {
+        @JvmField
+        val CREATOR: Parcelable.Creator<EmptyDataTablePlan> = object : Parcelable.Creator<EmptyDataTablePlan> {
+            override fun createFromParcel(parcel: Parcel): EmptyDataTablePlan =
+                    EmptyDataTablePlan(parcel)
+
+            override fun newArray(size: Int): Array<EmptyDataTablePlan?> =
+                    arrayOfNulls(size)
+        }
 
         fun fromSaveFile(src: File): EmptyDataTablePlan {
             val tables = mutableListOf<EmptyDataTable>()
@@ -52,19 +63,49 @@ class EmptyDataTablePlan(val name: String, val tables: Iterable<EmptyDataTable>,
         }
     }
 
+    constructor(parcel: Parcel) : this(
+            parcel.readString(),
+            parcel.createTypedArrayList(EmptyDataTable.CREATOR),
+            File(parcel.readString()))
+
+    constructor() : this(String(), emptyList())
+
+    override fun writeToParcel(parcel: Parcel, flags: Int) {
+        parcel.writeString(name)
+        parcel.writeTypedList(tables.toList())
+        parcel.writeString(src?.absolutePath)
+    }
+
     fun save(location: File? = null) {
         val file = location ?: src
         ?: throw IllegalStateException("Both the stored and supplied file were null.")
         val writer = OutputStreamWriter(FileOutputStream(file), "UTF-8")
         val json = JsonWriter(writer)
+        // TODO: Store Json names somewhere central
+        json.beginObject()
         json.name("name").value(name)
+        json.name("tables")
         saveTables(json, tables)
+        json.endObject()
         writer.close()
+    }
+
+    override fun describeContents(): Int {
+        return 0
     }
 }
 
-data class EmptyDataTable(val xBias: Float, val yBias: Float, override var seatCount: Int, override var separators: SortedSet<Int> = sortedSetOf()) : Table {
+data class EmptyDataTable(val xBias: Float, val yBias: Float, override var seatCount: Int, override var separators: SortedSet<Int> = sortedSetOf()) : Table, Parcelable {
     companion object {
+        @JvmField
+        val CREATOR = object : Parcelable.Creator<EmptyDataTable> {
+            override fun createFromParcel(parcel: Parcel): EmptyDataTable =
+                    EmptyDataTable(parcel)
+
+            override fun newArray(size: Int): Array<EmptyDataTable?> =
+                    arrayOfNulls(size)
+        }
+
         fun fromJson(reader: JsonReader): EmptyDataTable {
             var x = -1f
             var y = -1f
@@ -98,12 +139,26 @@ data class EmptyDataTable(val xBias: Float, val yBias: Float, override var seatC
         }
     }
 
+    constructor(parcel: Parcel) : this(
+            parcel.readFloat(),
+            parcel.readFloat(),
+            parcel.readInt(),
+            parcel.createIntArray().toSortedSet())
+
+    override fun writeToParcel(parcel: Parcel, flags: Int) {
+        parcel.writeFloat(xBias)
+        parcel.writeFloat(yBias)
+        parcel.writeInt(seatCount)
+        parcel.writeIntArray(separators.toIntArray())
+    }
+
     fun write(writer: JsonWriter) {
         with(writer) {
             beginObject()
             name("xBias").value(xBias)
             name("yBias").value(yBias)
             name("seats").value(seatCount)
+            name("separators")
             writeSeparators()
             endObject()
         }
@@ -114,5 +169,9 @@ data class EmptyDataTable(val xBias: Float, val yBias: Float, override var seatC
         for (i in separators)
             value(i)
         endArray()
+    }
+
+    override fun describeContents(): Int {
+        return 0
     }
 }

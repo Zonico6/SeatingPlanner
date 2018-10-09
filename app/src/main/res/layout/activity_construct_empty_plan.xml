@@ -20,26 +20,6 @@
         android:orientation="vertical"
         app:layout_constraintGuide_end="@dimen/side_options_width_empty_plan" />
 
-    <Button
-        android:id="@+id/apply_changes"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
-        android:text="@string/apply_changes"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <Button
-        android:id="@+id/helper_btn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="8dp"
-        android:text="@string/helper"
-        app:layout_constraintStart_toEndOf="@+id/apply_changes"
-        app:layout_constraintTop_toTopOf="parent" />
-
     <TextView
         android:id="@+id/seat_count_instruction"
         android:layout_width="wrap_content"
