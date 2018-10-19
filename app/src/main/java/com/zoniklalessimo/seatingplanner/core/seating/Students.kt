@@ -9,7 +9,8 @@ open class StudentSet(students: Iterable<Student>) {
     var studentMap: Map<String, Student> = students.map {it.name to it }.toMap()
         private set
 
-    fun getStudents(): Collection<Student> = studentMap.values
+    val students: Collection<Student>
+        get() = studentMap.values
 
     val size get() = studentMap.size
 
@@ -19,7 +20,7 @@ open class StudentSet(students: Iterable<Student>) {
     operator fun plus(otherStudents: StudentSet) = StudentSet(studentMap.values + otherStudents.studentMap.values)
 
     fun add(otherStudents: Iterable<Student>) {
-        updateStudents(getStudents() + otherStudents)
+        updateStudents(students + otherStudents)
     }
 
     /**
@@ -63,10 +64,11 @@ open class StudentSet(students: Iterable<Student>) {
     /**
      * Split this set into several smaller sets of student names whose sizes match the provided groupSizes.
      *
-     * @param groupSizes Declares the sizes of the groups
+     * @param groupsSizes Declares the sizes of the groups
      * @return The created groups of students, sorted
      */
-    private fun splitGroups(groupSizes: MutableList<Int>): Array<Set<String>> {
+    private fun splitGroups(groupsSizes: Collection<Int>): Array<Set<String>> {
+        val groupSizes = groupsSizes.toMutableList()
         groupSizes.sort()
         val coveredNames = mutableSetOf<String>()
         val finalGroups = mutableListOf<Set<String>>()
