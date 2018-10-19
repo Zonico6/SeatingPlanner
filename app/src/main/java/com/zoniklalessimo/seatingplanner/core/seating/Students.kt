@@ -132,7 +132,7 @@ open class StudentSet(students: Iterable<Student>) {
      * @param groupSizes Declares the sizes of the groups
      * @return The created groups of studentMap by names.
      */
-        fun split(groupSizes: List<Int>): Array<StudentSet> {
+    fun split(groupSizes: List<Int>): Array<StudentSet> {
         val groups = splitGroups(groupSizes.toMutableList())
         val retGroups = arrayOfNulls<StudentSet>(groups.size)
         for ((index, group) in groups.withIndex()) {
