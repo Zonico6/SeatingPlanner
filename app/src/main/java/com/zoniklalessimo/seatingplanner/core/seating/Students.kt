@@ -1,8 +1,8 @@
 package com.zoniklalessimo.seatingplanner.core.seating
 
 /**
- * Holds a number of studentMap. It's the very basis for most constructions so it either represents the group the will
- * become a table or for example it could be a school class.
+ * Holds a number of studentMap. It's the very basis for most constructions so it either represents the group which
+ * will become a table or it can be an entire collection of students. For example a school class.
  */
 open class StudentSet(students: Iterable<Student>) {
     // Turn the given studentNames into a map of the form 'name' to 'student'
