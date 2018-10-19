@@ -67,7 +67,7 @@ open class StudentSet(students: Iterable<Student>) {
      * @param groupsSizes Declares the sizes of the groups
      * @return The created groups of students, sorted
      */
-    private fun splitGroups(groupsSizes: Collection<Int>): Array<Set<String>> {
+    fun splitGroups(groupsSizes: Collection<Int>): Array<Set<String>> {
         val groupSizes = groupsSizes.toMutableList()
         groupSizes.sort()
         val coveredNames = mutableSetOf<String>()
@@ -134,15 +134,12 @@ open class StudentSet(students: Iterable<Student>) {
      * @param groupSizes Declares the sizes of the groups
      * @return The created groups of studentMap by names.
      */
-    fun split(groupSizes: List<Int>): Array<StudentSet> {
-        val groups = splitGroups(groupSizes.toMutableList())
-        val retGroups = arrayOfNulls<StudentSet>(groups.size)
-        for ((index, group) in groups.withIndex()) {
-            retGroups[index] = StudentSet(group.map { studentMap[it]!! })
-        }
-        @Suppress("UNCHECKED_CAST")
-        return retGroups as Array<StudentSet>
-    }
+    fun split(groupSizes: List<Int>): Array<StudentSet> =
+            // splitGroups returns the student names
+            // -> Map the names to the actual student objects
+            splitGroups(groupSizes).map {
+                StudentSet(it.map { name -> studentMap[name]!! })
+            }.toTypedArray()
 }
 
 /**
