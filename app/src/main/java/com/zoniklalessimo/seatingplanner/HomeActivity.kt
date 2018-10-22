@@ -45,18 +45,15 @@ class HomeActivityViewModel : ViewModel(), ChoosePlanDialogViewModel, StudentsVi
     var baseDir: File? = null
         set(value) {
             if (value != null) {
-                /*if( !value.exists() )
-                    value.mkdirs()
-                else if( !value.isDirectory && value.canWrite() ){
-                    value.delete()
-                    value.mkdirs()
-                }*/
+                value.delete()
 
                 emptyPlanDir = File(value, "emptyPlans")
+                emptyPlanDir.delete()
                 if (!emptyPlanDir.exists())
                     emptyPlanDir.mkdir()
 
                 emptyPlanEntries = File(value, "emptyPlanEntries.txt")
+                emptyPlanEntries.delete()
                 if (!emptyPlanEntries.exists())
                     emptyPlanEntries.createNewFile()
             }
@@ -65,6 +62,12 @@ class HomeActivityViewModel : ViewModel(), ChoosePlanDialogViewModel, StudentsVi
     override lateinit var emptyPlanDir: File
     override lateinit var emptyPlanEntries: File
     override val entries: MutableLiveData<List<ChoosePlanEntry>> = MutableLiveData()
+
+    fun deleteEmptyPlans() {
+        emptyPlanDir.listFiles().forEach { it.delete() }
+        emptyPlanEntries.delete()
+        emptyPlanEntries.createNewFile()
+    }
 
     override fun onCleared() {
         super<StudentsViewModel>.onCleared()

@@ -2,8 +2,8 @@ package com.zoniklalessimo.seatingplanner
 
 import android.graphics.Point
 import android.os.Bundle
-import android.support.constraint.ConstraintSet
-import android.support.constraint.Guideline
+import androidx.constraintlayout.widget.ConstraintSet
+import androidx.constraintlayout.widget.Guideline
 import android.transition.TransitionManager
 import android.view.Menu
 import android.view.MenuItem
