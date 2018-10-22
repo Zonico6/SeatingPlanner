@@ -8,8 +8,9 @@ import android.widget.BaseAdapter
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.TextView
+import com.zoniklalessimo.seatingplanner.R
 
-class ChooseTablePlanAdapter(private val context: Context, private val model: ChoosePlanDialogViewModel) : BaseAdapter() {
+class ChooseTablePlanAdapter(private val model: ChoosePlanDialogViewModel) : BaseAdapter() {
     companion object {
         const val WITH_ADD_ENTRY_ITEM = false
 
@@ -20,7 +21,7 @@ class ChooseTablePlanAdapter(private val context: Context, private val model: Ch
     private data class EntryViewHolder(val name: TextView, val rows: TextView, val seats: TextView)
     private data class AddEntryViewHolder(val add: ImageButton, val title: EditText)
 
-    override fun getView(i: Int, convertView: View?, parent: ViewGroup?): View {
+    override fun getView(i: Int, convertView: View?, parent: ViewGroup): View {
         return when (getItemViewType(i)) {
             VIEW_TYPE_SHOW -> getEntryView(i, convertView, parent)
             VIEW_TYPE_ADD -> getAddEntryView(convertView, parent)
@@ -28,11 +29,11 @@ class ChooseTablePlanAdapter(private val context: Context, private val model: Ch
         }
     }
 
-    private fun getEntryView(i: Int, convertView: View?, parent: ViewGroup?): View {
+    private fun getEntryView(i: Int, convertView: View?, parent: ViewGroup): View {
         val view: View
         val holder: EntryViewHolder
         if (convertView == null) {
-            val inflater = LayoutInflater.from(context)
+            val inflater = LayoutInflater.from(parent.context)
             view = inflater.inflate(R.layout.choose_empty_table_plan_item, parent, false)
 
             val name = view.findViewById(R.id.name) as TextView
@@ -55,11 +56,11 @@ class ChooseTablePlanAdapter(private val context: Context, private val model: Ch
         return view
     }
 
-    private fun getAddEntryView(convertView: View?, parent: ViewGroup?): View {
+    private fun getAddEntryView(convertView: View?, parent: ViewGroup): View {
         val view: View
         val holder: AddEntryViewHolder
         if (convertView == null) {
-            val inflater = LayoutInflater.from(context)
+            val inflater = LayoutInflater.from(parent.context)
             view = inflater.inflate(R.layout.add_entry_item, parent, false)
 
             val add = view.findViewById(R.id.add_entry) as ImageButton
@@ -73,7 +74,7 @@ class ChooseTablePlanAdapter(private val context: Context, private val model: Ch
         }
 
         holder.add.setOnClickListener(
-                ChooseEmptyTablePlanDialogFragment.OnAddPlanListener(context, model, holder.title))
+                ChooseEmptyTablePlanDialogFragment.OnAddPlanListener(parent.context, model, holder.title))
 
         return view
     }

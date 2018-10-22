@@ -1,10 +1,10 @@
 package com.zoniklalessimo.seatingplanner.choosing
 
+import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.widget.EditText
@@ -16,11 +16,11 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import com.zoniklalessimo.seatingplanner.EditEmptyPlanActivity
 import com.zoniklalessimo.seatingplanner.HomeActivityViewModel
+import com.zoniklalessimo.seatingplanner.R
 
 class ChooseEmptyTablePlanDialogFragment : DialogFragment() {
-    class OnAddPlanListener(val context: Context?, val model: ChoosePlanDialogViewModel, val title: EditText) : View.OnClickListener {
+    class OnAddPlanListener(val context: Context?, private val model: ChoosePlanDialogViewModel, val title: EditText) : View.OnClickListener {
         override fun onClick(v: View?) {
-            Log.d("fjkdalöjfkfösajk", "entries are: " + model.getEntries().value)
             val name = title.text.toString()
             if (name.isNotBlank()) {
                 model.createPlan(name)
@@ -43,7 +43,7 @@ class ChooseEmptyTablePlanDialogFragment : DialogFragment() {
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         super.onCreate(savedInstanceState)
 
-        val adapter = ChooseTablePlanAdapter(context!!, model)
+        val adapter = ChooseTablePlanAdapter(model)
 
         model.getEntries().observe(this, Observer {
             adapter.notifyDataSetChanged()
@@ -67,6 +67,7 @@ class ChooseEmptyTablePlanDialogFragment : DialogFragment() {
         return builder.create()
     }
 
+    @SuppressLint("InflateParams")
     private fun setupAddEntryTitle(builder: AlertDialog.Builder) {
         val titleView = activity!!.layoutInflater.inflate(R.layout.add_entry_title, null)
 
