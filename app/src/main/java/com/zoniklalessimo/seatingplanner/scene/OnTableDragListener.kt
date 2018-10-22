@@ -2,9 +2,9 @@ package com.zoniklalessimo.seatingplanner.scene
 
 import android.graphics.PointF
 import android.graphics.RectF
-import android.support.constraint.ConstraintLayout
-import android.support.constraint.ConstraintSet
-import android.support.constraint.Guideline
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.constraintlayout.widget.ConstraintSet
+import androidx.constraintlayout.widget.Guideline
 import android.util.Log
 import android.view.DragEvent
 import android.view.View

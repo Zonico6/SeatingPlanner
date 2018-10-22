@@ -1,7 +1,7 @@
 package com.zoniklalessimo.seatingplanner.scene
 
 import android.os.Build
-import android.support.constraint.ConstraintLayout
+import androidx.constraintlayout.widget.ConstraintLayout
 import android.view.View
 import com.zoniklalessimo.seatingplanner.R
 import java.util.*
@@ -63,9 +63,7 @@ interface ActionStateUser {
     //region Movable
     val movableTables: HashSet<View>
 
-    fun EmptyTableView.setMovable(@Suppress("DEPRECATION") color: Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-        context.getColor(R.color.tableMoveHighlight) else
-        resources.getColor(R.color.tableMoveHighlight)) {
+    fun EmptyTableView.setMovable(color: Int = context.getColor(R.color.tableMoveHighlight)) {
         if (isTabbed())
             resetTabbedWithoutHighlight()
         highlight(color)

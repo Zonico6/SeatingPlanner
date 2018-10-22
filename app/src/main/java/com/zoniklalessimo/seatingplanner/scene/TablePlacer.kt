@@ -1,7 +1,7 @@
 package com.zoniklalessimo.seatingplanner.scene
 
-import android.support.constraint.ConstraintSet
-import android.support.constraint.Guideline
+import androidx.constraintlayout.widget.ConstraintSet
+import androidx.constraintlayout.widget.Guideline
 import android.util.Log
 
 interface TablePlacer {
