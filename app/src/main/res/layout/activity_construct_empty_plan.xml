@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/root"
@@ -7,13 +7,13 @@
     android:layout_height="match_parent"
     tools:context=".EditEmptyPlanActivity">
 
-    <android.support.constraint.Group
+    <androidx.constraintlayout.widget.Group
         android:id="@+id/options_group"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:constraint_referenced_ids="remove_seat_btn,delete_btn,seat_count_instruction,add_seat_btn,separators_instruction,edit_separators_table" />
 
-    <android.support.constraint.Guideline
+    <androidx.constraintlayout.widget.Guideline
         android:id="@+id/options_guide"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -111,4 +111,4 @@
             android:value="true" />
     </com.zoniklalessimo.seatingplanner.scene.EmptyTableView>
 
-</android.support.constraint.ConstraintLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
