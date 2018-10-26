@@ -17,6 +17,7 @@ class StudentSetViewModel : ViewModel() {
             this.value
                 ?: throw IllegalStateException("Null value among students.")
 
+    fun getStudent(index: Int) = requireStudent(index)
 
     fun getStudentObserver(adapter: RecyclerView.Adapter<*>, index: Int) = Observer<Student> {
             adapter.notifyItemInserted(index)
