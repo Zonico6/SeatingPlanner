@@ -20,6 +20,8 @@ class StudentSetViewModel : ViewModel() {
 
     fun getStudent(index: Int) = requireStudent(index)
 
+    fun getNames() = students.map { it.requireStudent().name }
+
     fun getStudentObserver(adapter: RecyclerView.Adapter<*>, index: Int) = Observer<OpenableStudent> {
             adapter.notifyItemInserted(index)
         }
@@ -61,9 +63,6 @@ class StudentSetViewModel : ViewModel() {
             it.value = student
         }
     }
-
-
-
 
     fun close(index: Int) {
         students[index].value = requireStudent(index).asClosed()

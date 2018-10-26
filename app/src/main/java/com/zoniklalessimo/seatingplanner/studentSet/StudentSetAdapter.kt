@@ -1,5 +1,8 @@
 package com.zoniklalessimo.seatingplanner.studentSet
 
+import android.app.AlertDialog
+import android.content.Context
+import android.content.DialogInterface
 import android.text.Layout
 import android.view.LayoutInflater
 import android.view.View
@@ -7,6 +10,8 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import com.zoniklalessimo.seatingplanner.R
 import java.lang.Exception
@@ -66,20 +71,34 @@ class StudentSetAdapter(private val model: StudentSetViewModel) :
                 holder.wishes.addView(wish)
             } ?: throw Exception("Student with opened holder was closed.")
 
+            fun getChooseStudentDialogBuilder(onChosen: (name: String) -> Unit) {
+                val builder = AlertDialog.Builder(holder.name.context)
+                builder.setItems(model.getNames().toTypedArray()) { inter, index ->
+                    val name = model.getStudent(index).name
+                    onChosen(name)
+                }
+            }
+
             // The button that's not opened, opens the respective wishes, the other one adds on wish
             if (model.hasNeighboursOpened(position)) {
                 holder.neighbourCount.setOnClickListener {
-                    model.appendNeighbour(position, TODO(), true)
+                    getChooseStudentDialogBuilder { name ->
+                        model.appendNeighbour(position, name, true)
+                    }
                 }
+
                 holder.distantCount.setOnClickListener {
                     model.openDistants(position)
                 }
             } else {
+                holder.distantCount.setOnClickListener {
+                    getChooseStudentDialogBuilder {  name ->
+                        model.appendDistant(position, name, true)
+                    }
+                }
+
                 holder.neighbourCount.setOnClickListener {
                     model.openNeighbours(position)
-                }
-                holder.distantCount.setOnClickListener {
-                    model.appendDistant(position, TODO(), true)
                 }
             }
 
