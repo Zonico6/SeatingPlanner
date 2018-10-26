@@ -149,7 +149,7 @@ class StudentSet(students: Iterable<Student>) {
  * @param neighbours The neighbour wishes of the Student ordered from important to unimportant.
  * @param distants The distant wishes of the Student ordered from important to unimportant.
  */
-class Student(val name: String, val neighbours: Array<String>, val distants: Array<String>) {
+open class Student(val name: String, val neighbours: Array<String>, val distants: Array<String>) {
     /**
      * Gives the priority of the given student/name. The priority is the index combined with
      * the size of the containing list, according to maskPriority. If the name isn't there, it return null.
