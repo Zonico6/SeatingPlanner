@@ -2,6 +2,9 @@ package com.zoniklalessimo.seatingplanner
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.view.ContextMenu
+import android.view.Menu
+import android.view.View
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -30,5 +33,10 @@ class EditStudentSetActivity : AppCompatActivity() {
             it.adapter = adapter
             it.layoutManager = layoutManager
         }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.edit_student_set_menu, menu)
+        return true
     }
 }
