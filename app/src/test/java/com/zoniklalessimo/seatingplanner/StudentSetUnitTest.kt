@@ -19,16 +19,17 @@ class StudentSetUnitTest {
 
     @Test
     fun runThrough_StudentSet_Interactions() {
-        onView(withId(R.id.add_student)).perform(click())
 
-        val name = "Luna"
+        val name = "Annie"
 
-        // Give student a name
-        onView(
-                withChild(withText("")))
-                .perform(typeText(name))
-
-        onData(withParentIndex(0)).
-                onChildView(withId(R.id.add_neighbour)).perform(click())
+        for (i in 0..3) {
+            onView(withId(R.id.add_student)).perform(click())
+            // Give student a name
+            onView(
+                    withChild(withText("")))
+                    .perform(typeText(name + i.toString()))
+        }
+        onData(withParentIndex(0)).onChildView(withId(R.id.neighbour_count)).perform(click())
+        onData(withText(name)).perform(click())
     }
 }

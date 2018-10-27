@@ -36,11 +36,16 @@ class StudentSetAdapter(private val model: StudentSetViewModel) :
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val inflater = LayoutInflater.from(parent.context)
-        val view = inflater.inflate(R.layout.student_closed, parent, false)
 
         return when (viewType) {
-            CLOSED_STUDENT_VIEW_TYPE -> ClosedStudentVH(view)
-            OPENED_STUDENT_VIEW_TYPE -> OpenStudentVH(view)
+            CLOSED_STUDENT_VIEW_TYPE -> {
+                val view = inflater.inflate(R.layout.student_closed, parent, false)
+                ClosedStudentVH(view)
+            }
+            OPENED_STUDENT_VIEW_TYPE -> {
+                val view = inflater.inflate(R.layout.student_opened, parent, false)
+                OpenStudentVH(view)
+            }
             else -> throw IllegalArgumentException("Unknown View Type received.")
         }
     }
@@ -60,31 +65,30 @@ class StudentSetAdapter(private val model: StudentSetViewModel) :
                 model.openNeighbours(position)
             }
             holder.distantCount.setOnClickListener {
-                model.openNeighbours(position)
+                model.openDistants(position)
             }
         } else { // Opened
             // Display wishes
             model.getOpenedWishes(position)?.forEach {
                 val inflater = LayoutInflater.from(holder.wishes.context)
-                val wish = inflater.inflate(R.layout.student_wish_item, holder.wishes)
+                val wish = inflater.inflate(R.layout.student_wish_item, holder.wishes, false)
                 wish.findViewById<TextView>(R.id.name).text = it
                 holder.wishes.addView(wish)
             } ?: throw Exception("Student with opened holder was closed.")
 
-            fun getChooseStudentDialogBuilder(onChosen: (name: String) -> Unit) {
-                val builder = AlertDialog.Builder(holder.name.context)
-                builder.setItems(model.getNames().toTypedArray()) { inter, index ->
-                    val name = model.getStudent(index).name
-                    onChosen(name)
-                }
-            }
+            fun getChooseStudentDialogBuilder(onChosen: (name: String) -> Unit) =
+                    AlertDialog.Builder(holder.name.context).
+                            setItems(model.getNames().sorted().toTypedArray()) { inter, index ->
+                                val name = model.getStudent(index).name
+                                onChosen(name)
+                            }
 
             // The button that's not opened, opens the respective wishes, the other one adds on wish
             if (model.hasNeighboursOpened(position)) {
                 holder.neighbourCount.setOnClickListener {
                     getChooseStudentDialogBuilder { name ->
                         model.appendNeighbour(position, name, true)
-                    }
+                    }.show()
                 }
 
                 holder.distantCount.setOnClickListener {
@@ -94,7 +98,7 @@ class StudentSetAdapter(private val model: StudentSetViewModel) :
                 holder.distantCount.setOnClickListener {
                     getChooseStudentDialogBuilder {  name ->
                         model.appendDistant(position, name, true)
-                    }
+                    }.show()
                 }
 
                 holder.neighbourCount.setOnClickListener {

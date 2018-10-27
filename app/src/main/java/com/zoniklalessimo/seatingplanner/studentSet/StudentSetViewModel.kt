@@ -23,7 +23,7 @@ class StudentSetViewModel : ViewModel() {
     fun getNames() = students.map { it.requireStudent().name }
 
     fun getStudentObserver(adapter: RecyclerView.Adapter<*>, index: Int) = Observer<OpenableStudent> {
-            adapter.notifyItemInserted(index)
+            adapter.notifyItemChanged(index)
         }
 
     fun bindWithAdapter(owner: LifecycleOwner, adapter: RecyclerView.Adapter<*>) {
@@ -41,6 +41,8 @@ class StudentSetViewModel : ViewModel() {
 
         liveData.value = student
         students.add(liveData)
+
+        adapter.notifyItemInserted(students.size)
     }
 
     fun renameStudent(newName: String, index: Int) {
@@ -153,6 +155,7 @@ class OpenableStudent(name: String, neighbours: Array<String>, distants: Array<S
 
 fun OpenableStudent.withNeighboursOpen(): OpenableStudent =
         withOpened(OpenableStudent.NEIGHBOURS_OPENED)
+
 fun OpenableStudent.withDistantsOpen() =
         withOpened(OpenableStudent.DISTANTS_OPENED)
 
@@ -160,16 +163,18 @@ fun OpenableStudent.asClosed(): OpenableStudent =
         OpenableStudent(name, neighbours, distants, OpenableStudent.CLOSED)
 
 fun OpenableStudent.withAppendNeighbour(neighbour: String, openNeighbours: Boolean = false) =
-        withNewNeighbour(neighbour, neighbours.size, openNeighbours)
-fun OpenableStudent.withNewNeighbour(neighbour: String, index: Int, openNeighbours: Boolean = false): OpenableStudent {
+        withInsertNeighbour(neighbour, neighbours.size, openNeighbours)
+
+fun OpenableStudent.withInsertNeighbour(neighbour: String, index: Int, openNeighbours: Boolean = false): OpenableStudent {
     val newNeighbours = neighbours.toMutableList()
     newNeighbours.add(index, neighbour)
     return withNeighbours(newNeighbours.toTypedArray(), openNeighbours)
 }
 
 fun OpenableStudent.withAppendDistant(distant: String, openDistants: Boolean = false) =
-        withNewDistant(distant, distants.size, openDistants)
-fun OpenableStudent.withNewDistant(distant: String, index: Int, openDistants: Boolean = false): OpenableStudent {
+        withInsertDistant(distant, distants.size, openDistants)
+
+fun OpenableStudent.withInsertDistant(distant: String, index: Int, openDistants: Boolean = false): OpenableStudent {
     val newDistants = distants.toMutableList()
     newDistants.add(index, distant)
     return withDistants(newDistants.toTypedArray(), openDistants)

@@ -26,7 +26,7 @@ class HomeActivity : AppCompatActivity() {
         model.baseDir = dataDir
 
         sample_table.setOnClickListener {
-            val i = Intent(this@HomeActivity, EditEmptyPlanActivity::class.java)
+            val i = Intent(this, EditStudentSetActivity::class.java)
             startActivity(i)
         }
     }
