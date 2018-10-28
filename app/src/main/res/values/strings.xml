@@ -23,4 +23,8 @@
     <string name="choose_empty_plan_dialog_title">Choose A Plan</string>
     <string name="view_model">ViewModel</string>
     <string name="enter_student_name">Enter a name for this student...</string>
+    <string name="delete_wish_descr">Delete this wish.</string>
+    <string name="change_wish_pos_descr">Change the position withing the student.</string>
+    <string name="swap_wish_descr">Swap wish to other kind of wishes</string>
+    <string name="goto_student_descr">Open the student of this wish.</string>
 </resources>
