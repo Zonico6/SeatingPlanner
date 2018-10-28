@@ -13,7 +13,9 @@ import android.widget.TextView
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
+import com.jmedeisis.draglinearlayout.DragLinearLayout
 import com.zoniklalessimo.seatingplanner.R
+import kotlinx.android.synthetic.main.student_wish_item.view.*
 import java.lang.Exception
 import java.lang.IllegalArgumentException
 
@@ -30,8 +32,8 @@ class StudentSetAdapter(private val model: StudentSetViewModel) :
         val distantCount: TextView = view.findViewById(R.id.distant_count)
     }
 
-    class OpenStudentVH(view: View) : ClosedStudentVH(view) {
-        val wishes: LinearLayout = view as LinearLayout
+    class OpenStudentVH(view: View, val parent: RecyclerView) : ClosedStudentVH(view) {
+        val wishes = view as DragLinearLayout
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -44,7 +46,7 @@ class StudentSetAdapter(private val model: StudentSetViewModel) :
             }
             OPENED_STUDENT_VIEW_TYPE -> {
                 val view = inflater.inflate(R.layout.student_opened, parent, false)
-                OpenStudentVH(view)
+                OpenStudentVH(view, parent as RecyclerView)
             }
             else -> throw IllegalArgumentException("Unknown View Type received.")
         }
@@ -59,72 +61,120 @@ class StudentSetAdapter(private val model: StudentSetViewModel) :
         holder.neighbourCount.text = student.neighbours.size.toString()
         holder.distantCount.text = student.distants.size.toString()
 
+        setupGeneralCallbacks(holder, position)
+
+        // Are we dealing with a closed or opened holder?
+        if (holder !is OpenStudentVH) { // Closed
+
+            setupClosedCallbacks(holder, position)
+
+        } else { // Opened
+            // Clear old wishes
+            val profile = holder.wishes.getChildAt(0)
+            holder.wishes.removeAllViews()
+            holder.wishes.addView(profile)
+
+            // Display new wishes
+            val inflater = LayoutInflater.from(holder.wishes.context)
+            // We could do the following more efficient if we passed on to addWishItem if we are dealing
+            // With neighbours or distants, then we wouldn't have to check which side we are
+            // In the callbacks, e.g. when swapping a wish
+            model.getOpenedWishes(position)?.forEach {
+                holder.addWishItem(position, it, inflater)
+
+            } ?: throw Exception("Student with opened holder was closed.")
+
+            setupOpenedCallbacks(holder, position, student)
+        }
+    }
+
+    private fun setupGeneralCallbacks(holder: ClosedStudentVH, position: Int) {
         holder.name.setOnEditorActionListener { tv, _, _ ->
             model.renameStudent(position, tv.text.toString())
             tv.clearFocus()
             true
         }
+    }
 
-        // Are we dealing with a closed or opened holder?
-        if (holder !is OpenStudentVH) { // Closed
+    private fun setupClosedCallbacks(holder: ClosedStudentVH, position: Int) {
+        holder.neighbourCount.setOnClickListener {
+            model.openNeighbours(position)
+        }
+        holder.distantCount.setOnClickListener {
+            model.openDistants(position)
+        }
+    }
+
+    private fun setupOpenedCallbacks(holder: OpenStudentVH, position: Int,
+                                     student: OpenableStudent = model.getStudent(position)) {
+        fun getChooseStudentDialogBuilder(onChosen: (name: String) -> Unit): AlertDialog.Builder {
+            val names = model.getNames().asSequence().filter {
+                !student.contains(it) && it != student.name
+            }.sorted().toList().toTypedArray()
+
+            return AlertDialog.Builder(holder.name.context).
+                    setItems(names) { _, index ->
+                        onChosen(names[index])
+                    }
+        }
+
+        // The button that's not opened, opens the respective wishes, the other one adds on wish
+        if (model.hasNeighboursOpened(position)) {
             holder.neighbourCount.setOnClickListener {
-                model.openNeighbours(position)
+                getChooseStudentDialogBuilder { name ->
+                    model.appendNeighbour(position, name, true)
+                }.show()
             }
+
             holder.distantCount.setOnClickListener {
                 model.openDistants(position)
             }
-        } else { // Opened
-            // Display wishes
-            val profile = holder.wishes.getChildAt(0)
-            holder.wishes.removeAllViews()
-            holder.wishes.addView(profile)
-
-            model.getOpenedWishes(position)?.forEach {
-                val inflater = LayoutInflater.from(holder.wishes.context)
-                val wish = inflater.inflate(R.layout.student_wish_item, holder.wishes, false)
-                wish.findViewById<TextView>(R.id.name).text = it
-
-                holder.wishes.addView(wish)
-            } ?: throw Exception("Student with opened holder was closed.")
-
-            fun getChooseStudentDialogBuilder(onChosen: (name: String) -> Unit): AlertDialog.Builder {
-                val names = model.getNames().asSequence().filter {
-                    it != student.name
-                }.sorted().toList().toTypedArray()
-
-                return AlertDialog.Builder(holder.name.context).
-                        setItems(names) { _, index ->
-                    onChosen(names[index])
-                }
+        } else {
+            holder.distantCount.setOnClickListener {
+                getChooseStudentDialogBuilder {  name ->
+                    model.appendDistant(position, name, true)
+                }.show()
             }
 
-            // The button that's not opened, opens the respective wishes, the other one adds on wish
-            if (model.hasNeighboursOpened(position)) {
-                holder.neighbourCount.setOnClickListener {
-                    getChooseStudentDialogBuilder { name ->
-                        model.appendNeighbour(position, name, true)
-                    }.show()
-                }
-
-                holder.distantCount.setOnClickListener {
-                    model.openDistants(position)
-                }
-            } else {
-                holder.distantCount.setOnClickListener {
-                    getChooseStudentDialogBuilder {  name ->
-                        model.appendDistant(position, name, true)
-                    }.show()
-                }
-
-                holder.neighbourCount.setOnClickListener {
-                    model.openNeighbours(position)
-                }
-            }
-
-            holder.name.setOnClickListener {
-                model.close(position)
+            holder.neighbourCount.setOnClickListener {
+                model.openNeighbours(position)
             }
         }
+
+        holder.name.setOnClickListener {
+            model.close(position)
+        }
+    }
+    private fun OpenStudentVH.addWishItem(position: Int, name: String, inflater: LayoutInflater = LayoutInflater.from(wishes.context)) {
+        val wish = inflater.inflate(R.layout.student_wish_item, wishes, false)
+        wish.findViewById<TextView>(R.id.name).text = name
+
+        // Lazily because this function is called for every wish item so by doing it lazily
+        // Those things only get calculated when needed, i.e. when the user presses one of the buttons
+        val index by lazy {
+            model.indexOf(name)
+        }
+        val student by lazy {
+            model.getStudent(index)
+        }
+
+        wish.goto_student.setOnClickListener {
+            // Scroll to the student and open the type of wishes that our wish is also in
+            model.openWishes(index, model.getStudent(position).opened)
+            parent.smoothScrollToPosition(index)
+        }
+
+        wish.swap_wish.setOnClickListener {
+            model.swapWish(position, name, true)
+        }
+
+        wish.delete.setOnClickListener {
+            model.removeOpen(position, name)
+        }
+
+        // TODO: Changing order of wishes by clicking on change order button
+
+        wishes.addView(wish)
     }
 
     override fun getItemCount(): Int = model.studentCount

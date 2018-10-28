@@ -12,7 +12,7 @@
         android:id="@+id/change_position"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/ic_edit_black_24dp"
+        android:src="@drawable/ic_up_down_black_24dp"
         android:contentDescription="@string/change_wish_pos_descr" />
 
     <ImageButton
