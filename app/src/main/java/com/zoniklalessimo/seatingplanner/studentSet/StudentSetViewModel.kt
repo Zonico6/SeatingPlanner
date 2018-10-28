@@ -20,7 +20,9 @@ class StudentSetViewModel : ViewModel() {
 
     fun getStudent(index: Int) = requireStudent(index)
 
-    fun getNames() = students.map { it.requireStudent().name }
+    fun getNames() = students.map {
+        it.requireStudent().name
+    }
 
     fun getStudentObserver(adapter: RecyclerView.Adapter<*>, index: Int) = Observer<OpenableStudent> {
             adapter.notifyItemChanged(index)
@@ -45,7 +47,7 @@ class StudentSetViewModel : ViewModel() {
         adapter.notifyItemInserted(students.size)
     }
 
-    fun renameStudent(newName: String, index: Int) {
+    fun renameStudent(index: Int, newName: String) {
         val oldStudent = requireStudent(index)
          // Rename
         students[index].value = OpenableStudent(newName, oldStudent.neighbours, oldStudent.distants)

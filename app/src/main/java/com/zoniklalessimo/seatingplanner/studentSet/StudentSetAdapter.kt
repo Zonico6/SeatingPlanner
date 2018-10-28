@@ -59,6 +59,12 @@ class StudentSetAdapter(private val model: StudentSetViewModel) :
         holder.neighbourCount.text = student.neighbours.size.toString()
         holder.distantCount.text = student.distants.size.toString()
 
+        holder.name.setOnEditorActionListener { tv, _, _ ->
+            model.renameStudent(position, tv.text.toString())
+            tv.clearFocus()
+            true
+        }
+
         // Are we dealing with a closed or opened holder?
         if (holder !is OpenStudentVH) { // Closed
             holder.neighbourCount.setOnClickListener {
@@ -69,19 +75,28 @@ class StudentSetAdapter(private val model: StudentSetViewModel) :
             }
         } else { // Opened
             // Display wishes
+            val profile = holder.wishes.getChildAt(0)
+            holder.wishes.removeAllViews()
+            holder.wishes.addView(profile)
+
             model.getOpenedWishes(position)?.forEach {
                 val inflater = LayoutInflater.from(holder.wishes.context)
                 val wish = inflater.inflate(R.layout.student_wish_item, holder.wishes, false)
                 wish.findViewById<TextView>(R.id.name).text = it
+
                 holder.wishes.addView(wish)
             } ?: throw Exception("Student with opened holder was closed.")
 
-            fun getChooseStudentDialogBuilder(onChosen: (name: String) -> Unit) =
-                    AlertDialog.Builder(holder.name.context).
-                            setItems(model.getNames().sorted().toTypedArray()) { inter, index ->
-                                val name = model.getStudent(index).name
-                                onChosen(name)
-                            }
+            fun getChooseStudentDialogBuilder(onChosen: (name: String) -> Unit): AlertDialog.Builder {
+                val names = model.getNames().asSequence().filter {
+                    it != student.name
+                }.sorted().toList().toTypedArray()
+
+                return AlertDialog.Builder(holder.name.context).
+                        setItems(names) { _, index ->
+                    onChosen(names[index])
+                }
+            }
 
             // The button that's not opened, opens the respective wishes, the other one adds on wish
             if (model.hasNeighboursOpened(position)) {
