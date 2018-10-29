@@ -1,23 +1,20 @@
 package com.zoniklalessimo.seatingplanner.studentSet
 
 import android.app.AlertDialog
-import android.content.Context
-import android.content.DialogInterface
-import android.text.Layout
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.fragment.app.DialogFragment
-import androidx.fragment.app.Fragment
+import androidx.core.view.get
 import androidx.recyclerview.widget.RecyclerView
 import com.jmedeisis.draglinearlayout.DragLinearLayout
 import com.zoniklalessimo.seatingplanner.R
 import kotlinx.android.synthetic.main.student_wish_item.view.*
 import java.lang.Exception
 import java.lang.IllegalArgumentException
+import kotlin.concurrent.thread
 
 class StudentSetAdapter(private val model: StudentSetViewModel) :
         RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -76,9 +73,7 @@ class StudentSetAdapter(private val model: StudentSetViewModel) :
 
             // Display new wishes
             val inflater = LayoutInflater.from(holder.wishes.context)
-            // We could do the following more efficient if we passed on to addWishItem if we are dealing
-            // With neighbours or distants, then we wouldn't have to check which side we are
-            // In the callbacks, e.g. when swapping a wish
+
             model.getOpenedWishes(position)?.forEach {
                 holder.addWishItem(position, it, inflater)
 
@@ -145,23 +140,28 @@ class StudentSetAdapter(private val model: StudentSetViewModel) :
             model.close(position)
         }
     }
-    private fun OpenStudentVH.addWishItem(position: Int, name: String, inflater: LayoutInflater = LayoutInflater.from(wishes.context)) {
+    private fun OpenStudentVH.addWishItem(position: Int, name: String,
+                                          inflater: LayoutInflater = LayoutInflater.from(wishes.context)) {
         val wish = inflater.inflate(R.layout.student_wish_item, wishes, false)
         wish.findViewById<TextView>(R.id.name).text = name
 
         // Lazily because this function is called for every wish item so by doing it lazily
         // Those things only get calculated when needed, i.e. when the user presses one of the buttons
-        val index by lazy {
+        val wishIndex by lazy {
             model.indexOf(name)
         }
-        val student by lazy {
-            model.getStudent(index)
+        val wishStudent by lazy {
+            model.getStudent(wishIndex)
         }
 
         wish.goto_student.setOnClickListener {
             // Scroll to the student and open the type of wishes that our wish is also in
-            model.openWishes(index, model.getStudent(position).opened)
-            parent.smoothScrollToPosition(index)
+            if (model.hasNeighboursOpened(wishIndex))
+                model.openNeighbours(wishIndex)
+            else
+                model.openDistants(wishIndex)
+
+            parent.smoothScrollToPosition(wishIndex)
         }
 
         wish.swap_wish.setOnClickListener {
@@ -172,9 +172,33 @@ class StudentSetAdapter(private val model: StudentSetViewModel) :
             model.removeOpen(position, name)
         }
 
-        // TODO: Changing order of wishes by clicking on change order button
+        wishes.addDragView(wish, wish.change_order)
 
-        wishes.addView(wish)
+        // Unfortunately, we have no means of detecting when a drag has ended. However we only want to
+        // Update our view model when that's the case so we save the changes but don't interrupt the
+        // Dragging whenever two items switch positions and the listener is called.
+        // Therefore, as soon as the drag begins, i.e. the listener is first called, we set up a thread
+        // That checks every other moment if we have ended the drag and if so, we update our model.
+        var checkDragEndedThread = null as Thread?
+        val checkDragEndedIntervalMs = 650L
+        val checkDragEndedMaxRepetitions = 25
+
+        wishes.setOnViewSwapListener { firstView, _, _, _ ->
+            checkDragEndedThread = checkDragEndedThread ?: thread {
+
+                for (i in 0..checkDragEndedMaxRepetitions) {
+                    Thread.sleep(checkDragEndedIntervalMs)
+                    if (firstView.visibility == View.VISIBLE) // Drag ended
+                        break
+                }
+                val newWishes = Array(model.getStudent(position).openWishes?.size ?: 0) {
+                    (wishes[it + 1] as LinearLayout).name.text.toString()
+                }
+                model.postStudent(position,
+                        model.getStudent(position).
+                                withOpenWishes(newWishes))
+            }
+        }
     }
 
     override fun getItemCount(): Int = model.studentCount

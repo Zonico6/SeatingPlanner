@@ -26,7 +26,6 @@ android {
         }
     }
 }
-
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
@@ -55,4 +54,8 @@ dependencies {
     // Implementation integration testing
     androidTestImplementation 'androidx.test:runner:1.1.0'
     androidTestImplementation 'androidx.test:rules:1.1.0'
+
+    // Third party
+    implementation 'com.jmedeisis:draglinearlayout:1.1.0'
 }
+
