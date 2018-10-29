@@ -23,6 +23,9 @@ class StudentSetViewModel : ViewModel() {
     fun setStudent(index: Int, value: OpenableStudent) {
         students[index].value = value
     }
+    fun postStudent(index: Int, value: OpenableStudent) {
+        students[index].postValue(value)
+    }
 
     fun getNames() = students.map {
         it.requireStudent().name
@@ -166,17 +169,21 @@ class StudentSetViewModel : ViewModel() {
         return true
     }
 
+    fun moveWish(index: Int, oldWishIndex: Int, newWishIndex: Int) {
+        students[index].value = requireStudent(index).withMoveOpenWish(oldWishIndex, newWishIndex)
+    }
+
     fun getOpenedWishes(index: Int): Array<String>? =
-            requireStudent(index).openedWishes
+            requireStudent(index).openWishes
 
     fun isClosed(index: Int): Boolean =
             requireStudent(index).isClosed
     fun isOpened(index: Int): Boolean =
             requireStudent(index).isOpened
     fun hasNeighboursOpened(index: Int) =
-            requireStudent(index).areNeighboursOpened
+            requireStudent(index).hasNeighboursOpened
     fun hasDistantsOpened(index: Int) =
-            requireStudent(index).areDistantsOpened
+            requireStudent(index).hasDistantsOpened
 }
 
 class OpenableStudent(name: String, neighbours: Array<String>, distants: Array<String>,
@@ -190,10 +197,10 @@ class OpenableStudent(name: String, neighbours: Array<String>, distants: Array<S
     val isOpened get() = opened != CLOSED
     val isClosed get() = !isOpened
 
-    val areNeighboursOpened get() = opened == NEIGHBOURS_OPENED
-    val areDistantsOpened get() = opened == DISTANTS_OPENED
+    val hasNeighboursOpened get() = opened == NEIGHBOURS_OPENED
+    val hasDistantsOpened get() = opened == DISTANTS_OPENED
 
-    val openedWishes: Array<String>?
+    val openWishes: Array<String>?
         get() = when (opened) {
             CLOSED -> null
             NEIGHBOURS_OPENED -> neighbours
@@ -225,7 +232,7 @@ class OpenableStudent(name: String, neighbours: Array<String>, distants: Array<S
     fun withDistants(distants: Array<String>, openDistants: Boolean = false) =
             OpenableStudent(name, neighbours, distants, if (openDistants) DISTANTS_OPENED else opened)
 
-    fun withOpenedWishes(newWishes: Array<String>): OpenableStudent =
+    fun withOpenWishes(newWishes: Array<String>): OpenableStudent =
             when (opened) {
                 OpenableStudent.NEIGHBOURS_OPENED -> withNeighbours(newWishes)
                 OpenableStudent.DISTANTS_OPENED -> withDistants(newWishes)
@@ -315,6 +322,18 @@ fun OpenableStudent.withRemoveDistant(wish: String) =
         withDistants(distants.withRemove(wish))
 
 fun OpenableStudent.withRemoveOpen(wish: String) =
-        openedWishes?.let {
-            withOpenedWishes(it.withRemove(wish))
+        openWishes?.let {
+            withOpenWishes(it.withRemove(wish))
         } ?: this
+
+fun OpenableStudent.withMoveOpenWish(oldIndex: Int, newIndex: Int): OpenableStudent {
+    val oldWishes = openWishes ?: return this
+    return withOpenWishes(oldWishes.withMoveElement(oldIndex, newIndex))
+}
+
+private fun Array<String>.withMoveElement(oldIndex: Int, newIndex: Int): Array<String> {
+    val list = toMutableList()
+    val old = list.removeAt(oldIndex)
+    list.add(newIndex, old)
+    return list.toTypedArray()
+}
