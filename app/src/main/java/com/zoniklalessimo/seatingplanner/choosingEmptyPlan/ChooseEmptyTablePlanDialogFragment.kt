@@ -1,4 +1,4 @@
-package com.zoniklalessimo.seatingplanner.choosing
+package com.zoniklalessimo.seatingplanner.choosingEmptyPlan
 
 import android.annotation.SuppressLint
 import android.app.Dialog
@@ -41,8 +41,6 @@ class ChooseEmptyTablePlanDialogFragment : DialogFragment() {
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        super.onCreate(savedInstanceState)
-
         val adapter = ChooseTablePlanAdapter(model)
 
         model.getEntries().observe(this, Observer {
