@@ -1,4 +1,4 @@
-package com.zoniklalessimo.seatingplanner.choosing
+package com.zoniklalessimo.seatingplanner.choosingEmptyPlan
 
 import android.util.Log
 import androidx.lifecycle.LiveData
@@ -64,8 +64,6 @@ interface ChoosePlanDialogViewModel {
         number += 1
 
         val file = File(emptyPlanDir, number.toString() + name)
-
-        Log.d("fkjdlalkfsdö", file.toString())
 
         if (!file.exists())
             file.createNewFile()
