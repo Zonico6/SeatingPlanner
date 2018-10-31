@@ -14,22 +14,27 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
+import com.zoniklalessimo.seatingplanner.ChooseDialogViewModel
 import com.zoniklalessimo.seatingplanner.EditEmptyPlanActivity
 import com.zoniklalessimo.seatingplanner.HomeActivityViewModel
 import com.zoniklalessimo.seatingplanner.R
 
-class ChooseEmptyTablePlanDialogFragment : DialogFragment() {
-    class OnAddPlanListener(val context: Context?, private val model: ChoosePlanDialogViewModel, val title: EditText) : View.OnClickListener {
-        override fun onClick(v: View?) {
-            val name = title.text.toString()
-            if (name.isNotBlank()) {
-                model.createPlan(name)
-            } else {
-                Toast.makeText(context, R.string.no_blank_or_empty_title, Toast.LENGTH_LONG).show()
-            }
-            title.text = null
+open class OnAddItemListener(val context: Context?, private val model: ChooseDialogViewModel, val title: EditText,
+                             private val onValidatedClick: (title: String) -> Unit) : View.OnClickListener {
+    override fun onClick(v: View?) {
+        val name = title.text.toString()
+        if (name.isNotBlank()) {
+            onValidatedClick(name)
+        } else {
+            Toast.makeText(context, R.string.no_blank_or_empty_title, Toast.LENGTH_LONG).show()
         }
+        title.text = null
     }
+}
+
+class ChooseEmptyTablePlanDialogFragment : DialogFragment() {
+    class OnAddPlanListener(context: Context?, model: ChoosePlanDialogViewModel, title: EditText) :
+            OnAddItemListener(context, model, title, { _title -> model.createPlan(_title)})
 
     private lateinit var model: ChoosePlanDialogViewModel
 

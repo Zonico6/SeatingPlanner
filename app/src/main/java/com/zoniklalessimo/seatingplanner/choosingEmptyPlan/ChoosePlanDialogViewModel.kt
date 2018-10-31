@@ -3,13 +3,14 @@ package com.zoniklalessimo.seatingplanner.choosingEmptyPlan
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import com.zoniklalessimo.seatingplanner.ChooseDialogViewModel
 import java.io.File
 import java.io.FileOutputStream
 import java.io.FileReader
 import java.io.RandomAccessFile
 import kotlin.math.max
 
-interface ChoosePlanDialogViewModel {
+interface ChoosePlanDialogViewModel : ChooseDialogViewModel {
     val emptyPlanDir: File
     val emptyPlanEntries: File
     val entries: MutableLiveData<List<ChoosePlanEntry>>
@@ -34,6 +35,10 @@ interface ChoosePlanDialogViewModel {
             entries.value = old - entry
             true
         } else false
+    }
+
+    override fun createNewItem(title: String) {
+        createPlan(title)
     }
 
     /**

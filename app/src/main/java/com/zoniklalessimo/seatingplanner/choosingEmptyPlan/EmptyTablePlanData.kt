@@ -1,4 +1,4 @@
-package com.zoniklalessimo.seatingplanner.choosing
+package com.zoniklalessimo.seatingplanner.choosingEmptyPlan
 
 import android.os.Parcel
 import android.os.Parcelable
