@@ -11,9 +11,9 @@ import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.iterator
-import com.zoniklalessimo.seatingplanner.choosing.ChoosePlanEntry
-import com.zoniklalessimo.seatingplanner.choosing.EmptyDataTable
-import com.zoniklalessimo.seatingplanner.choosing.EmptyDataTablePlan
+import com.zoniklalessimo.seatingplanner.choosingEmptyPlan.ChoosePlanEntry
+import com.zoniklalessimo.seatingplanner.choosingEmptyPlan.EmptyDataTable
+import com.zoniklalessimo.seatingplanner.choosingEmptyPlan.EmptyDataTablePlan
 import com.zoniklalessimo.seatingplanner.scene.DisplacementInformation
 import com.zoniklalessimo.seatingplanner.scene.EmptyTableView
 import com.zoniklalessimo.seatingplanner.scene.OnTableDragListener

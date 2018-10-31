@@ -4,12 +4,12 @@
     android:layout_height="match_parent">
 
     <ImageButton
-        android:id="@+id/add_entry"
+        android:id="@+id/add_student_set"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="24dp"
         android:layout_marginTop="16dp"
-        android:contentDescription="@string/add_student_set_descr"
+        android:contentDescription="@string/add_entry_descr"
         android:src="@drawable/ic_list_add_black_24dp" />
 
     <EditText

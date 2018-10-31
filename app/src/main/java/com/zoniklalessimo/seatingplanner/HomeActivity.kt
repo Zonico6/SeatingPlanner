@@ -8,9 +8,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProviders
-import com.zoniklalessimo.seatingplanner.choosing.ChooseEmptyTablePlanDialogFragment
-import com.zoniklalessimo.seatingplanner.choosing.ChoosePlanDialogViewModel
-import com.zoniklalessimo.seatingplanner.choosing.ChoosePlanEntry
+import com.zoniklalessimo.seatingplanner.choosingEmptyPlan.ChooseEmptyTablePlanDialogFragment
+import com.zoniklalessimo.seatingplanner.choosingEmptyPlan.ChoosePlanDialogViewModel
+import com.zoniklalessimo.seatingplanner.choosingEmptyPlan.ChoosePlanEntry
+import com.zoniklalessimo.seatingplanner.choosingStudentSet.ChooseStudentSetViewModel
+import com.zoniklalessimo.seatingplanner.schema.StudentSet
+import com.zoniklalessimo.seatingplanner.studentSet.StudentSetViewModel
 import kotlinx.android.synthetic.main.activity_home.*
 import java.io.File
 
@@ -41,7 +44,15 @@ class HomeActivity : AppCompatActivity() {
     }
 }
 
-class HomeActivityViewModel : ViewModel(), ChoosePlanDialogViewModel, StudentsViewModel {
+interface ChooseDialogViewModel {
+    fun createNewItem(title: String)
+}
+
+// Next time, make the view models their own classes and merge them somehow.
+// Forcing them to interfaces cuts a lot of possibilities and makes it more complex than it needs to be.
+class HomeActivityViewModel : ViewModel(), ChoosePlanDialogViewModel, ChooseStudentSetViewModel {
+    override val studentSets: MutableLiveData<List<StudentSet>> = MutableLiveData()
+
     var baseDir: File? = null
         set(value) {
             if (value != null) {
@@ -69,14 +80,13 @@ class HomeActivityViewModel : ViewModel(), ChoosePlanDialogViewModel, StudentsVi
         emptyPlanEntries.createNewFile()
     }
 
-    override fun onCleared() {
-        super<StudentsViewModel>.onCleared()
-        super<ChoosePlanDialogViewModel>.onCleared()
+    override fun createNewItem(title: String) {
+        throw NotImplementedError("You can't invoke createNewItem on HomeActivityViewModel. " +
+                "Instead, cast to your desired ViewModel and invoke it on that.")
     }
-}
 
-interface StudentsViewModel {
-    fun onCleared() {
-
+    override fun onCleared() {
+        super<ChooseStudentSetViewModel>.onCleared()
+        super<ChoosePlanDialogViewModel>.onCleared()
     }
 }

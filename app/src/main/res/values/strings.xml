@@ -18,13 +18,15 @@
     <string name="save">Save</string>
     <string name="saved_msg">Plan was saved</string>
     <string name="no_blank_or_empty_title">The title must not be empty and consist of more than whitespaces</string>
-    <string name="add_entry_description">Add a new plan with the supplied title.</string>
+    <string name="add_entry_descr">Add a new plan with the supplied title.</string>
     <string name="title">Title</string>
     <string name="choose_empty_plan_dialog_title">Choose A Plan</string>
     <string name="view_model">ViewModel</string>
-    <string name="enter_student_name">Enter a name for this student...</string>
+    <string name="enter_student_name">Enter a name for this student…</string>
     <string name="delete_wish_descr">Delete this wish.</string>
-    <string name="change_wish_pos_descr">Change the position withing the student.</string>
+    <string name="change_wish_pos_descr">Change the position within the student.</string>
     <string name="swap_wish_descr">Swap wish to other kind of wishes</string>
     <string name="goto_student_descr">Open the student of this wish.</string>
+    <string name="choose_student_set_dialog_title">Choose Students</string>
+    <string name="add_student_set_descr">Add a new set of students</string>
 </resources>
