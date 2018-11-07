@@ -79,15 +79,14 @@ data class EmptyDataTablePlan(val name: String, val tables: Iterable<EmptyDataTa
     fun save(location: File? = null) {
         val file = location ?: src
         ?: throw IllegalStateException("Both the stored and supplied file were null.")
-        val writer = OutputStreamWriter(FileOutputStream(file), "UTF-8")
-        val json = JsonWriter(writer)
-        // TODO: Store Json names somewhere central
-        json.beginObject()
-        json.name("name").value(name)
-        json.name("tables")
-        saveTables(json, tables)
-        json.endObject()
-        writer.close()
+        JsonWriter(OutputStreamWriter(FileOutputStream(file), "UTF-8")).use {json ->
+            // TODO: Store Json names somewhere central
+            json.beginObject()
+            json.name("name").value(name)
+            json.name("tables")
+            saveTables(json, tables)
+            json.endObject()
+        }
     }
 
     override fun describeContents(): Int {
