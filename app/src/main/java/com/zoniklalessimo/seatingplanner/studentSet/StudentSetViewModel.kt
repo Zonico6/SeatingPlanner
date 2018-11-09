@@ -2,13 +2,60 @@ package com.zoniklalessimo.seatingplanner.studentSet
 
 import androidx.lifecycle.*
 import androidx.recyclerview.widget.RecyclerView
+import com.google.flatbuffers.FlatBufferBuilder
 import com.zoniklalessimo.seatingplanner.core.seating.Student
-import java.lang.IllegalStateException
-import java.lang.UnsupportedOperationException
+import com.zoniklalessimo.seatingplanner.schema.StudentSet
+import java.io.File
+import java.io.FileOutputStream
 import kotlin.math.min
 
 class StudentSetViewModel : ViewModel() {
+    private var src = MutableLiveData<File>()
+    fun getSrc() = src as LiveData<File>
+    /**
+     * Sets src to value only if it wasn't set before
+     * @return True if new value was set, False otherwise
+     */
+    fun initSrc(value: File): Boolean {
+        if (src.value == null) {
+            src.value = value
+            return true
+        }
+        return false
+    }
+
+    private var name = MutableLiveData<String>()
+    fun getName() = name as LiveData<String>
+    /**
+     * Sets name to value only if it wasn't set before
+     * @return True if new value was set, False otherwise
+     */
+    fun initName(value: String): Boolean {
+        if (name.value == null) {
+            name.value = value
+            return true
+        }
+        return false
+    }
+
     private val students = mutableListOf<MutableLiveData<OpenableStudent>>()
+    /**
+     * Sets students to value only if it wasn't set before
+     * @return True if new value was set, False otherwise
+     */
+    fun initStudents(value: Array<Student>): Boolean =
+        if (students.isEmpty()) {
+            students.addAll(value.map { student ->
+                val liveData = MutableLiveData<OpenableStudent>()
+
+                liveData.value = OpenableStudent(student, OpenableStudent.CLOSED)
+
+                liveData
+            })
+            true
+        } else
+            false
+
     private fun requireStudent(index: Int): OpenableStudent =
         students[index].requireStudent()
     fun getStudents() = students.map { it.requireStudent() }
@@ -29,6 +76,35 @@ class StudentSetViewModel : ViewModel() {
 
     fun getNames() = students.map {
         it.requireStudent().name
+    }
+
+    fun save() {
+        val builder = FlatBufferBuilder()
+
+        val bSetName = builder.createString(name.value)
+        val bSetSrc = builder.createString(src.value?.absolutePath)
+
+        val students = getStudents().map { student ->
+            val neighbours = student.neighbours.map(builder::createString)
+            val distants = student.neighbours.map(builder::createString)
+
+            val bNeighbours = com.zoniklalessimo.seatingplanner.schema.Student.createNeighboursVector(builder, neighbours.toIntArray())
+            val bDistants = com.zoniklalessimo.seatingplanner.schema.Student.createDistantsVector(builder, distants.toIntArray())
+            val bName = builder.createString(student.name)
+
+            com.zoniklalessimo.seatingplanner.schema.Student.createStudent(builder, bName, bNeighbours, bDistants)
+        }
+        val bStudents = StudentSet.createStudentsVector(builder, students.toIntArray())
+
+        val set = StudentSet.createStudentSet(builder, bSetSrc, bSetName, bStudents)
+
+        builder.finish(set)
+
+        val bytes = builder.sizedByteArray()
+
+        FileOutputStream(src.value).use {
+            it.write(bytes)
+        }
     }
 
     fun getStudentObserver(adapter: RecyclerView.Adapter<*>, index: Int) = Observer<OpenableStudent> {
@@ -186,13 +262,15 @@ class StudentSetViewModel : ViewModel() {
             requireStudent(index).hasDistantsOpened
 }
 
-class OpenableStudent(name: String, neighbours: Array<String>, distants: Array<String>,
-              val opened: Int = CLOSED) : Student(name, neighbours, distants) {
+class OpenableStudent(name: String, neighbours: Array<String>, distants: Array<String>, val opened: Int = CLOSED) :
+        Student(name, neighbours, distants) {
     companion object {
         const val CLOSED = 0x0
         const val NEIGHBOURS_OPENED = 0x1
         const val DISTANTS_OPENED = 0x2
     }
+
+    constructor(student: Student, opened: Int) : this(student.name, student.neighbours, student.distants, opened)
 
     val isOpened get() = opened != CLOSED
     val isClosed get() = !isOpened

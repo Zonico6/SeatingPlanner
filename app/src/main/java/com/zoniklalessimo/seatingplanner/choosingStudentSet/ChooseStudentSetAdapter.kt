@@ -45,10 +45,8 @@ class ChooseStudentSetAdapter(private val model: ChooseStudentSetViewModel) : Ba
             holder = view.tag as StudentSetViewHolder
         }
 
-        val studentSet = getItem(i) ?: return view
-
-        holder.name.text = studentSet.title()
-        holder.studentCount.text = studentSet.studentsLength().toString()
+        holder.name.text = model.titleOf(i)
+        holder.studentCount.text = model.studentCountOf(i).toString()
 
         return view
     }

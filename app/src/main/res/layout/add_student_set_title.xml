@@ -14,5 +14,5 @@
         android:textColor="#000"
         android:textSize="24sp" />
 
-    <include android:layout="@layout/add_student_set_item" />
+    <include layout="@layout/add_student_set_item" />
 </LinearLayout>

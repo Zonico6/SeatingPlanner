@@ -12,8 +12,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.jmedeisis.draglinearlayout.DragLinearLayout
 import com.zoniklalessimo.seatingplanner.R
 import kotlinx.android.synthetic.main.student_wish_item.view.*
-import java.lang.Exception
-import java.lang.IllegalArgumentException
 import kotlin.concurrent.thread
 
 class StudentSetAdapter(private val model: StudentSetViewModel) :
@@ -102,10 +100,13 @@ class StudentSetAdapter(private val model: StudentSetViewModel) :
 
     private fun setupOpenedCallbacks(holder: OpenStudentVH, position: Int,
                                      student: OpenableStudent = model.getStudent(position)) {
-        fun getChooseStudentDialogBuilder(onChosen: (name: String) -> Unit): AlertDialog.Builder {
+        fun getChooseStudentDialogBuilder(onChosen: (name: String) -> Unit): AlertDialog.Builder? {
             val names = model.getNames().asSequence().filter {
                 !student.contains(it) && it != student.name
             }.sorted().toList().toTypedArray()
+
+            if (names.isEmpty())
+                return null
 
             return AlertDialog.Builder(holder.name.context).
                     setItems(names) { _, index ->
@@ -118,7 +119,7 @@ class StudentSetAdapter(private val model: StudentSetViewModel) :
             holder.neighbourCount.setOnClickListener {
                 getChooseStudentDialogBuilder { name ->
                     model.appendNeighbour(position, name, true)
-                }.show()
+                }?.show()
             }
 
             holder.distantCount.setOnClickListener {
@@ -128,7 +129,7 @@ class StudentSetAdapter(private val model: StudentSetViewModel) :
             holder.distantCount.setOnClickListener {
                 getChooseStudentDialogBuilder {  name ->
                     model.appendDistant(position, name, true)
-                }.show()
+                }?.show()
             }
 
             holder.neighbourCount.setOnClickListener {
@@ -149,9 +150,6 @@ class StudentSetAdapter(private val model: StudentSetViewModel) :
         // Those things only get calculated when needed, i.e. when the user presses one of the buttons
         val wishIndex by lazy {
             model.indexOf(name)
-        }
-        val wishStudent by lazy {
-            model.getStudent(wishIndex)
         }
 
         wish.goto_student.setOnClickListener {

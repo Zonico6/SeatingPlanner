@@ -14,7 +14,7 @@
         android:textColor="#000"
         android:textSize="24sp" />
 
-    <include android:layout="@layout/add_entry_item" />
+    <include layout="@layout/add_entry_item" />
 
     <!-- <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"

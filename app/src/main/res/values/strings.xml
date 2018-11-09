@@ -10,6 +10,7 @@
     <string name="add_seat_description">Add a seat to the selected view.</string>
     <string name="delete">Delete</string>
     <string name="table_plan_extra">plan_src</string>
+    <string name="students_extra">students_of_student_set</string>
     <string name="src_extra">data_source</string>
     <string name="name_extra">data_name</string>
     <string name="entry_file_extra">entry_src_file</string>
@@ -29,4 +30,5 @@
     <string name="goto_student_descr">Open the student of this wish.</string>
     <string name="choose_student_set_dialog_title">Choose Students</string>
     <string name="add_student_set_descr">Add a new set of students</string>
+    <string name="add_btn_text">Add</string>
 </resources>

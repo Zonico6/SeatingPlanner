@@ -1,16 +1,19 @@
 package com.zoniklalessimo.seatingplanner
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.zoniklalessimo.seatingplanner.studentSet.OpenableStudent
 import com.zoniklalessimo.seatingplanner.studentSet.StudentSetAdapter
 import com.zoniklalessimo.seatingplanner.studentSet.StudentSetViewModel
-import java.util.*
+import java.io.File
+
+typealias CoreStudent = com.zoniklalessimo.seatingplanner.core.seating.Student
 
 class EditStudentSetActivity : AppCompatActivity() {
 
@@ -20,22 +23,44 @@ class EditStudentSetActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val name = intent.getStringExtra(getString(R.string.name_extra))
+        val src = File(intent.getStringExtra(getString(R.string.src_extra)))
+        @Suppress("UNCHECKED_CAST")
+        val students = intent.getSerializableExtra(getString(R.string.students_extra)) as Array<CoreStudent>
+
         val recycler = RecyclerView(this)
         setContentView(recycler)
 
+        // Do not separate these lines. They are initializing mandatory values
         model = ViewModelProviders.of(this).get(StudentSetViewModel::class.java)
+        model.initName(name)
+        model.initSrc(src)
+        model.initStudents(students)
 
-        val layoutManager = LinearLayoutManager(this)
         adapter = StudentSetAdapter(model)
-
+        // Without this line, all students added before won't be recognized.
         model.bindWithAdapter(this, adapter)
 
-        model.addStudent(this, adapter, OpenableStudent("Annie", emptyArray(), emptyArray(), OpenableStudent.CLOSED))
+        // model.getSrc().observe(this, Observer { })
+        model.getName().observe(this, Observer {
+            title = it
+        })
 
-        recycler.let {
+        val layoutManager = LinearLayoutManager(this)
+
+       recycler.let {
             it.adapter = adapter
             it.layoutManager = layoutManager
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        save()
+    }
+
+    fun save() {
+        model.save()
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -46,7 +71,11 @@ class EditStudentSetActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         when (item!!.itemId) {
             R.id.add_student -> {
-                model.addStudent(this, adapter, OpenableStudent("Annie" + Random().nextInt().toString().substring(0..4), emptyArray(), emptyArray(), OpenableStudent.CLOSED))
+                model.addStudent(this, adapter, OpenableStudent(String(),
+                        emptyArray(), emptyArray(), OpenableStudent.CLOSED))
+            }
+            R.id.save -> {
+                save()
             }
             else -> return super.onOptionsItemSelected(item)
         }

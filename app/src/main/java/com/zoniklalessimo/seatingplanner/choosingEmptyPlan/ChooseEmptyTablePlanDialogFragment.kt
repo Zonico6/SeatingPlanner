@@ -14,12 +14,11 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
-import com.zoniklalessimo.seatingplanner.ChooseDialogViewModel
 import com.zoniklalessimo.seatingplanner.EditEmptyPlanActivity
 import com.zoniklalessimo.seatingplanner.HomeActivityViewModel
 import com.zoniklalessimo.seatingplanner.R
 
-open class OnAddItemListener(val context: Context?, private val model: ChooseDialogViewModel, val title: EditText,
+open class OnAddItemListener(val context: Context?, val title: EditText,
                              private val onValidatedClick: (title: String) -> Unit) : View.OnClickListener {
     override fun onClick(v: View?) {
         val name = title.text.toString()
@@ -34,7 +33,7 @@ open class OnAddItemListener(val context: Context?, private val model: ChooseDia
 
 class ChooseEmptyTablePlanDialogFragment : DialogFragment() {
     class OnAddPlanListener(context: Context?, model: ChoosePlanDialogViewModel, title: EditText) :
-            OnAddItemListener(context, model, title, { _title -> model.createPlan(_title)})
+            OnAddItemListener(context, title, { _title -> model.createPlan(_title)})
 
     private lateinit var model: ChoosePlanDialogViewModel
 

@@ -1,9 +1,7 @@
 package com.zoniklalessimo.seatingplanner
 
-import android.content.Intent
 import android.os.Bundle
 import android.view.View
-import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -11,9 +9,9 @@ import androidx.lifecycle.ViewModelProviders
 import com.zoniklalessimo.seatingplanner.choosingEmptyPlan.ChooseEmptyTablePlanDialogFragment
 import com.zoniklalessimo.seatingplanner.choosingEmptyPlan.ChoosePlanDialogViewModel
 import com.zoniklalessimo.seatingplanner.choosingEmptyPlan.ChoosePlanEntry
+import com.zoniklalessimo.seatingplanner.choosingStudentSet.ChooseStudentSetDialogFragment
 import com.zoniklalessimo.seatingplanner.choosingStudentSet.ChooseStudentSetViewModel
 import com.zoniklalessimo.seatingplanner.schema.StudentSet
-import com.zoniklalessimo.seatingplanner.studentSet.StudentSetViewModel
 import kotlinx.android.synthetic.main.activity_home.*
 import java.io.File
 
@@ -25,46 +23,46 @@ class HomeActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
 
+        // Don't separate these two lines, the second one initializes a necessary field
         model = ViewModelProviders.of(this).get(HomeActivityViewModel::class.java)
         model.baseDir = dataDir
 
         sample_table.setOnClickListener {
-            val i = Intent(this, EditStudentSetActivity::class.java)
-            startActivity(i)
+            model.deleteStudentSets()
         }
     }
 
-    fun displayChooseTablePlanDialog(view: View) {
-        window.setFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM,
-                WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM)
+    @Suppress("UNUSED_PARAMETER")
+    fun displayChooseStudentSetDialog(view: View) {
+        with (ChooseStudentSetDialogFragment()) {
+            show(supportFragmentManager ,"choose_set_dialog")
+        }
+    }
 
-        with(ChooseEmptyTablePlanDialogFragment()) {
+    @Suppress("UNUSED_PARAMETER")
+    fun displayChooseTablePlanDialog(view: View) {
+        with (ChooseEmptyTablePlanDialogFragment()) {
             show(supportFragmentManager, "choose_plan_dialog")
         }
     }
 }
 
-interface ChooseDialogViewModel {
-    fun createNewItem(title: String)
-}
-
-// Next time, make the view models their own classes and merge them somehow.
-// Forcing them to interfaces cuts a lot of possibilities and makes it more complex than it needs to be.
 class HomeActivityViewModel : ViewModel(), ChoosePlanDialogViewModel, ChooseStudentSetViewModel {
     override val studentSets: MutableLiveData<List<StudentSet>> = MutableLiveData()
+    override lateinit var studentSetDir: File
 
     var baseDir: File? = null
         set(value) {
             if (value != null) {
-                value.delete()
+                studentSetDir = File(value, "studentSets")
+                if (!studentSetDir.exists())
+                    studentSetDir.mkdir()
 
                 emptyPlanDir = File(value, "emptyPlans")
-                emptyPlanDir.delete()
                 if (!emptyPlanDir.exists())
                     emptyPlanDir.mkdir()
 
                 emptyPlanEntries = File(value, "emptyPlanEntries.txt")
-                emptyPlanEntries.delete()
                 if (!emptyPlanEntries.exists())
                     emptyPlanEntries.createNewFile()
             }
@@ -80,13 +78,11 @@ class HomeActivityViewModel : ViewModel(), ChoosePlanDialogViewModel, ChooseStud
         emptyPlanEntries.createNewFile()
     }
 
-    override fun createNewItem(title: String) {
-        throw NotImplementedError("You can't invoke createNewItem on HomeActivityViewModel. " +
-                "Instead, cast to your desired ViewModel and invoke it on that.")
+    fun deleteStudentSets() {
+        studentSetDir.listFiles().forEach { it.delete() }
     }
 
     override fun onCleared() {
-        super<ChooseStudentSetViewModel>.onCleared()
         super<ChoosePlanDialogViewModel>.onCleared()
     }
 }
