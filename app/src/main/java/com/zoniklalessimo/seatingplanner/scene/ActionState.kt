@@ -1,8 +1,8 @@
 package com.zoniklalessimo.seatingplanner.scene
 
 import android.os.Build
-import androidx.constraintlayout.widget.ConstraintLayout
 import android.view.View
+import androidx.constraintlayout.widget.ConstraintLayout
 import com.zoniklalessimo.seatingplanner.R
 import java.util.*
 import kotlin.experimental.and

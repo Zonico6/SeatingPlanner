@@ -5,12 +5,12 @@ import android.graphics.Point
 import android.graphics.PointF
 import android.graphics.RectF
 import android.os.Build
-import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.constraintlayout.widget.ConstraintSet
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.constraintlayout.widget.ConstraintSet
 import com.zoniklalessimo.seatingplanner.R
 import java.util.*
 

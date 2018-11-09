@@ -2,14 +2,14 @@ package com.zoniklalessimo.seatingplanner
 
 import android.graphics.Point
 import android.os.Bundle
-import androidx.constraintlayout.widget.ConstraintSet
-import androidx.constraintlayout.widget.Guideline
 import android.transition.TransitionManager
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.constraintlayout.widget.ConstraintSet
+import androidx.constraintlayout.widget.Guideline
 import androidx.core.view.iterator
 import com.zoniklalessimo.seatingplanner.choosingEmptyPlan.ChoosePlanEntry
 import com.zoniklalessimo.seatingplanner.choosingEmptyPlan.EmptyDataTable

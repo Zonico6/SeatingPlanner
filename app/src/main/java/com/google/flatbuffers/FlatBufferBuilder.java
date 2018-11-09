@@ -16,16 +16,21 @@
 
 package com.google.flatbuffers;
 
-import static com.google.flatbuffers.Constants.*;
-
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.*;
+import java.nio.BufferUnderflowException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.util.Arrays;
-import java.nio.charset.Charset;
+
+import static com.google.flatbuffers.Constants.FILE_IDENTIFIER_LENGTH;
+import static com.google.flatbuffers.Constants.SIZEOF_INT;
+import static com.google.flatbuffers.Constants.SIZEOF_SHORT;
 
 /// @file
 /// @addtogroup flatbuffers_java_api
@@ -162,8 +167,7 @@ public class FlatBufferBuilder {
          *
          * @param bb the buffer to release
          */
-        default void releaseByteBuffer(ByteBuffer bb) {
-        }
+        void releaseByteBuffer(ByteBuffer bb);
     }
 
     /**
@@ -173,6 +177,11 @@ public class FlatBufferBuilder {
      * Allocate memory for a new byte-array backed `ByteBuffer` array inside the JVM.
      */
     public static final class HeapByteBufferFactory implements ByteBufferFactory {
+        @Override
+        public void releaseByteBuffer(ByteBuffer bb) {
+
+        }
+
         @Override
         public ByteBuffer newByteBuffer(int capacity) {
             return ByteBuffer.allocate(capacity).order(ByteOrder.LITTLE_ENDIAN);

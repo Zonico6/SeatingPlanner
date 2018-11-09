@@ -1,0 +1,15 @@
+namespace com.zoniklalessimo.studentSet;
+
+table Student {
+    name: string;
+    neighbours: [string];
+    distants: [string];
+}
+
+table StudentSet {
+	src: string;
+    name: string;
+    students: [Student];
+}
+
+root_type StudentSet;

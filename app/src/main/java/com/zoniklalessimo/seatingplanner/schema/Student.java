@@ -2,12 +2,13 @@
 
 package com.zoniklalessimo.seatingplanner.schema;
 
-import java.nio.*;
-import java.lang.*;
+import com.google.flatbuffers.FlatBufferBuilder;
+import com.google.flatbuffers.Table;
 
-import com.google.flatbuffers.*;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "WeakerAccess"})
 public final class Student extends Table {
   public static Student getRootAsStudent(ByteBuffer _bb) { return getRootAsStudent(_bb, new Student()); }
   public static Student getRootAsStudent(ByteBuffer _bb, Student obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
@@ -42,8 +43,7 @@ public final class Student extends Table {
   public static int createDistantsVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
   public static void startDistantsVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
   public static int endStudent(FlatBufferBuilder builder) {
-    int o = builder.endObject();
-    return o;
+    return builder.endObject();
   }
 }
 

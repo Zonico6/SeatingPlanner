@@ -2,13 +2,13 @@ package com.zoniklalessimo.seatingplanner.scene
 
 import android.graphics.PointF
 import android.graphics.RectF
-import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.constraintlayout.widget.ConstraintSet
-import androidx.constraintlayout.widget.Guideline
 import android.util.Log
 import android.view.DragEvent
 import android.view.View
 import android.view.ViewGroup
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.constraintlayout.widget.ConstraintSet
+import androidx.constraintlayout.widget.Guideline
 import androidx.core.view.iterator
 import com.zoniklalessimo.seatingplanner.R
 

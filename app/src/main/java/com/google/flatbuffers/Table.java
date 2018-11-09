@@ -16,7 +16,6 @@
 
 package com.google.flatbuffers;
 
-import static com.google.flatbuffers.Constants.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.CharBuffer;
@@ -24,6 +23,9 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CoderResult;
+
+import static com.google.flatbuffers.Constants.FILE_IDENTIFIER_LENGTH;
+import static com.google.flatbuffers.Constants.SIZEOF_INT;
 
 /// @cond FLATBUFFERS_INTERNAL
 
