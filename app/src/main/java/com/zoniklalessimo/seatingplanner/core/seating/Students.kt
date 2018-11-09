@@ -1,5 +1,7 @@
 package com.zoniklalessimo.seatingplanner.core.seating
 
+import java.io.Serializable
+
 /**
  * Holds a number of studentMap. It's the very basis for most constructions so it either represents the group which
  * will become a table or it can be an entire collection of students. For example a school class.
@@ -149,7 +151,8 @@ class StudentSet(students: Iterable<Student>) {
  * @param neighbours The neighbour wishes of the Student ordered from important to unimportant.
  * @param distants The distant wishes of the Student ordered from important to unimportant.
  */
-open class Student(val name: String, val neighbours: Array<String>, val distants: Array<String>) {
+open class Student(val name: String, val neighbours: Array<String>, val distants: Array<String>) :
+        Serializable {
     /**
      * Gives the priority of the given student/name. The priority is the index combined with
      * the size of the containing list, according to maskPriority. If the name isn't there, it return null.
