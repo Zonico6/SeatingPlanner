@@ -61,7 +61,7 @@ open class EmptyTableView(context: Context, attrs: AttributeSet?, defStyleAttr: 
     //endregion
 
     //region Table dimensions
-    var cornerRadius = 30f
+    var cornerRadius = 0f
         set(value) {
             field = value
             invalidate()
