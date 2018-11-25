@@ -152,9 +152,9 @@ interface OnTableDragListener : View.OnDragListener, TableScene {
                     // Hide original view
                     indicator.visibility = View.INVISIBLE
                     displaceInfo = DisplacementInformation()
-                    constraints.modify({
+                    constraints.modify(root) {
                         prepareConstraintsForDrag(indicator)
-                    }, root)
+                    }
                     return true
                 }
 
@@ -339,9 +339,9 @@ interface OnTableDragListener : View.OnDragListener, TableScene {
                     params.height = ViewGroup.LayoutParams.WRAP_CONTENT
                     indicator.layoutParams = params
 
-                    constraints.modify({
+                    constraints.modify(root) {
                         restoreBiases(indicator, optionsGuide, root.height.toFloat())
-                    }, root)
+                    }
                     // Synchronize xBias and yBias with layout position
                     indicator.translationX = 0f
                     indicator.translationY = 0f

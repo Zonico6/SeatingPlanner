@@ -12,6 +12,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.jmedeisis.draglinearlayout.DragLinearLayout
 import com.zoniklalessimo.seatingplanner.R
 import kotlinx.android.synthetic.main.student_wish_item.view.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.concurrent.thread
 
 class StudentSetAdapter(private val model: StudentSetViewModel) :
@@ -177,9 +180,38 @@ class StudentSetAdapter(private val model: StudentSetViewModel) :
         // Dragging whenever two items switch positions and the listener is called.
         // Therefore, as soon as the drag begins, i.e. the listener is first called, we set up a thread
         // That checks every other moment if we have ended the drag and if so, we update our model.
-        var checkDragEndedThread = null as Thread?
-        val checkDragEndedIntervalMs = 650L
+        var checkingDragEnded = false
         val checkDragEndedMaxRepetitions = 25
+        val checkDragEndedIntervalMs = 650L
+
+        wishes.setOnViewSwapListener { firstView, _, _, _ ->
+            // Probably best not to use GlobalScope in the end -> acquire on how to run launch on Ui
+            // Thread and then change it accordingly
+            if (checkingDragEnded)
+                return@setOnViewSwapListener
+            checkingDragEnded = true
+
+            GlobalScope.launch {
+
+                for (i in 0 .. checkDragEndedMaxRepetitions) {
+                    delay(checkDragEndedIntervalMs)
+
+                    if (firstView.visibility == View.VISIBLE) // Drag ended
+                        break
+                }
+
+                val newWishes = Array(model.getStudent(position).openWishes?.size ?: 0) {
+                    (wishes[it + 1] as LinearLayout).name.text.toString()
+                }
+                model.postStudent(position,
+                        model.getStudent(position).
+                                withOpenWishes(newWishes))
+
+                checkingDragEnded = false
+            }
+        }
+
+        /* var checkDragEndedThread = null as Thread?
 
         wishes.setOnViewSwapListener { firstView, _, _, _ ->
             checkDragEndedThread = checkDragEndedThread ?: thread {
@@ -196,7 +228,7 @@ class StudentSetAdapter(private val model: StudentSetViewModel) :
                         model.getStudent(position).
                                 withOpenWishes(newWishes))
             }
-        }
+        }*/
     }
 
     override fun getItemCount(): Int = model.studentCount

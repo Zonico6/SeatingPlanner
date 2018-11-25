@@ -10,7 +10,6 @@ import java.util.*
 
 // TODO: Store the key names of the json properties somewhere central, maybe SharedPreferences
 
-// TODO: Add Parcelable implementation
 data class EmptyDataTablePlan(val name: String, val tables: Iterable<EmptyDataTable>, val src: File? = null) : Parcelable {
     companion object {
         @JvmField
@@ -94,7 +93,7 @@ data class EmptyDataTablePlan(val name: String, val tables: Iterable<EmptyDataTa
     }
 }
 
-data class EmptyDataTable(val xBias: Float, val yBias: Float, override var seatCount: Int, override var separators: SortedSet<Int> = sortedSetOf()) : Table, Parcelable {
+open class EmptyDataTable(val xBias: Float, val yBias: Float, override var seatCount: Int, override var separators: SortedSet<Int> = sortedSetOf()) : Table, Parcelable {
     companion object {
         @JvmField
         val CREATOR = object : Parcelable.Creator<EmptyDataTable> {

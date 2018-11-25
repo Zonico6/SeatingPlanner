@@ -8,7 +8,7 @@
     app:borderWidth="4dp"
     app:dividerColor="#591083"
     app:dividerWidth="3dp"
-    app:seatColor="#22640c"
+    app:seatColor="@color/empty_table_seat"
     app:seatCount="@integer/new_table_seat_count"
     app:seatHeight="@dimen/table_seat_height"
     app:seatWidth="@dimen/table_seat_width"

@@ -14,18 +14,18 @@ import androidx.constraintlayout.widget.ConstraintSet
 import com.zoniklalessimo.seatingplanner.R
 import java.util.*
 
+fun ConstraintSet.modify(layout: ConstraintLayout, modifications: ConstraintSet.() -> Unit) {
+    clone(layout)
+    modifications()
+    applyTo(layout)
+}
+
 interface TableScene : ActionStateUser, TablePlacer {
     companion object {
         const val LOG_TAG = "TableScene"
     }
 
     //region utils
-    fun ConstraintSet.modify(modifications: ConstraintSet.() -> Unit, layout: ConstraintLayout) {
-        clone(layout)
-        modifications()
-        applyTo(layout)
-    }
-
     /**
      * The bounding rectangle of this view.
      */

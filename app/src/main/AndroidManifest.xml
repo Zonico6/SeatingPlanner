@@ -23,7 +23,11 @@
         <activity
             android:name=".EditEmptyPlanActivity"
             android:screenOrientation="sensorLandscape" />
-        <activity android:name=".EditStudentSetActivity"></activity>
+        <activity
+            android:name=".EditStudentSetActivity"/>
+        <activity
+            android:name=".AssignRowsActivity"
+            android:screenOrientation="sensorLandscape"/>
     </application>
 
 </manifest>
