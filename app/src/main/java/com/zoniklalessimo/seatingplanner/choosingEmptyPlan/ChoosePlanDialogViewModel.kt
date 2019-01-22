@@ -1,5 +1,6 @@
 package com.zoniklalessimo.seatingplanner.choosingEmptyPlan
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import java.io.File
@@ -12,6 +13,31 @@ interface ChoosePlanDialogViewModel {
     val emptyPlanDir: File
     val emptyPlanEntries: File
     val entries: MutableLiveData<List<ChoosePlanEntry>>
+
+    companion object {
+        fun loadEntries(entryDir: File, emptyPlanDir: File): MutableList<ChoosePlanEntry> {
+            val input = FileReader(entryDir)
+            val content = input.readText()
+
+            val ret = mutableListOf<ChoosePlanEntry>()
+
+            var separatorCount = 0 // Increments for every character and every row or seat digit
+            var entryString = String()
+            for (c in content) {
+                entryString += c
+                if (separatorCount >= ChoosePlanEntry.SEPARATORS_PER_ENTRY || c == ChoosePlanEntry.ENTRY_FIELD_SEPARATOR) {
+                    separatorCount++
+                }
+                if (separatorCount == ChoosePlanEntry.SEPARATORS_PER_ENTRY + ChoosePlanEntry.ROW_DIGITS + ChoosePlanEntry.SEATS_DIGITS) {
+                    ret += ChoosePlanEntry.parse(entryString, emptyPlanDir)
+                    separatorCount = 0
+                    entryString = String()
+                }
+            }
+
+            return ret
+        }
+    }
 
     fun getEntries(): LiveData<List<ChoosePlanEntry>> {
         if (entries.value == null) {
@@ -75,26 +101,7 @@ interface ChoosePlanDialogViewModel {
     }
 
     private fun fetchEntries(file: File) {
-        val input = FileReader(file)
-        val content = input.readText()
-
-        val ret = mutableListOf<ChoosePlanEntry>()
-
-        var separatorCount = 0 // Increments for every character and every row or seat digit
-        var entryString = String()
-        for (c in content) {
-            entryString += c
-            if (separatorCount >= ChoosePlanEntry.SEPARATORS_PER_ENTRY || c == ChoosePlanEntry.ENTRY_FIELD_SEPARATOR) {
-                separatorCount++
-            }
-            if (separatorCount == ChoosePlanEntry.SEPARATORS_PER_ENTRY + ChoosePlanEntry.ROW_DIGITS + ChoosePlanEntry.SEATS_DIGITS) {
-                ret += (ChoosePlanEntry).parse(entryString, emptyPlanDir)
-                separatorCount = 0
-                entryString = String()
-            }
-        }
-
-        entries.value = ret
+        entries.value = loadEntries(file, emptyPlanDir)
     }
 
     fun onCleared() {
@@ -113,7 +120,7 @@ data class ChoosePlanEntry(val name: String, val rows: Int, val seats: Int, val 
             src
                 ?: throw IllegalStateException("Neither then plan had a source file saved, nor was one supplied."))
 
-    // Format: name|entryFile|3-digits-rows 3-digits-seats
+    // Format: name|src|3-digits-rows 3-digits-seats
     // Example: Old Room␟old_room_plan.txt␟004015
     companion object {
         const val SEPARATORS_PER_ENTRY = 2
@@ -122,34 +129,46 @@ data class ChoosePlanEntry(val name: String, val rows: Int, val seats: Int, val 
         const val SEATS_DIGITS = 3
 
         fun parse(input: String, planDirectory: File?): ChoosePlanEntry {
+            fun String.filterStartingZeros(): String {
+                var overcameZeros = false
+                return filter {
+                    if (overcameZeros)
+                        return@filter true
+                    else if (it != '0') {
+                        overcameZeros = true
+                        return@filter true
+                    }
+                    false
+                }
+            }
+
             var name: String? = null
             var src: String? = null
             var rows: Int = -1
             var seats: Int = -1
 
             var segment = ""
-            parser@ for (c in input) {
-                when {
-                    src != null -> {
-                        if (rows == -1 && segment.length == ROW_DIGITS)
-                            rows = segment.toInt()
-                        else if (seats == -1 && segment.length == SEATS_DIGITS)
-                            seats = segment.toInt()
-                        else {
-                            segment += c
-                            continue@parser
-                        }
-                        segment = c.toString()
+            parser@ for (c in input + '\r') when {
+                src != null -> {
+                    if (rows == -1 && segment.length == ROW_DIGITS)
+                        rows = segment.filterStartingZeros().toInt()
+                    else if (seats == -1 && segment.length == SEATS_DIGITS)
+                        seats = segment.filterStartingZeros().toInt()
+                    else {
+                        segment += c
+                        continue@parser
                     }
-                    c == ENTRY_FIELD_SEPARATOR -> {
-                        if (name == null)
-                            name = segment
-                        else
-                            src = segment
-                        segment = String()
-                    }
-                    else -> segment += c
+                    // Reset segment after row was parsed
+                    segment = c.toString()
                 }
+                c == ENTRY_FIELD_SEPARATOR -> {
+                    if (name == null)
+                        name = segment
+                    else
+                        src = segment
+                    segment = String()
+                }
+                else -> segment += c
             }
             return ChoosePlanEntry(name as String, rows, seats, if (planDirectory == null) File(src as String) else File(planDirectory, src as String))
         }
@@ -194,13 +213,12 @@ data class ChoosePlanEntry(val name: String, val rows: Int, val seats: Int, val 
      * Parses the file until it finds an entry that matches the entryFile file of this entry and
      * then updates it's properties with those it finds in the file.
      */
-    fun update(file: File): Boolean {
-        val access = RandomAccessFile(file, "rw")
-        val bytes = ByteArray(access.length().toInt())
-        access.read(bytes)
+    fun update(file: File): Boolean = RandomAccessFile(file, "rw").use {
+        val bytes = ByteArray(it.length().toInt())
+        it.read(bytes)
 
         val location = findInstance(bytes)
-        return update(access, location)
+        update(it, location)
     }
 
     fun update(file: File, offset: Int): Boolean {
@@ -252,26 +270,31 @@ data class ChoosePlanEntry(val name: String, val rows: Int, val seats: Int, val 
 
     private data class FileEntry(val offset: Int, val length: Int) {
         companion object {
-            fun createFromBounds(firstSep: Int, lastSep: Int) =
-                    FileEntry(firstSep + ROW_DIGITS + SEATS_DIGITS, lastSep + ROW_DIGITS + SEATS_DIGITS)
+            fun createAtScrNumberSeparator(firstSep: Int, length: Int) =
+                    createFromSection(firstSep + ROW_DIGITS + SEATS_DIGITS, length)
+            fun createFromSection(first: Int, second: Int) =
+                    FileEntry(first, second - first)
         }
     }
 
     private fun findInstance(bytes: ByteArray): FileEntry {
         var sepCount = 0
-        var lastSep = -6
+        var lastSep = -ROW_DIGITS - SEATS_DIGITS
+        var beforeLastSep = lastSep
         var src = String()
         for ((i, b) in bytes.withIndex()) {
+            if (b.toInt() == -30 || b.toInt() == -97) continue
             val char = b.toChar()
 
             val inSource = sepCount % SEPARATORS_PER_ENTRY == 1
-            if (char == ENTRY_FIELD_SEPARATOR) {
+            if (b.toInt() == -112) { //ENTRY_FIELD_SEPARATOR) {
                 sepCount++
                 if (inSource) {
                     if (src == this.src.name) {
-                        return FileEntry.createFromBounds(lastSep, i)
+                        return FileEntry.createAtScrNumberSeparator(beforeLastSep, toSaveString().length)
                     }
                 }
+                beforeLastSep = lastSep
                 lastSep = i
             }
 
@@ -279,6 +302,7 @@ data class ChoosePlanEntry(val name: String, val rows: Int, val seats: Int, val 
                 src += char
             }
         }
-        return FileEntry(bytes.size, 0)
+        Log.d("ChoosePlanEntry", "Found no Instance of entry.")
+        return FileEntry(0, 0)
     }
 }

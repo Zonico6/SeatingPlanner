@@ -5,4 +5,5 @@
     <dimen name="side_options_width_full_plan">@dimen/side_options_width</dimen>
     <dimen name="table_seat_width">40dp</dimen>
     <dimen name="table_seat_height">30dp</dimen>
+    <dimen name="sidebar_student_text_size">8sp</dimen>
 </resources>

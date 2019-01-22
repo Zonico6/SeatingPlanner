@@ -23,6 +23,9 @@ interface EmptyPlan {
 }
 
 class SeatingPlan(val tables: Array<TableRow>) {
+    /**
+     * Seats one student at the place of the other and vice versa.
+     */
     fun swap(one: String, other: String) {
         // Assuming all the the names are unique
         var row = -1

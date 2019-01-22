@@ -17,6 +17,14 @@ data class WishSet(val neighbours: List<Wish>, val distants: List<Wish>)
  * ordered by this priority.
  */
 fun StudentSet.makeWishSet(): WishSet {
+    val maxNeighbourLength = students.map {
+        it.neighbours.size
+    }.max() ?: 0
+
+    val maxDistantLength = students.map {
+        it.distants.size
+    }.max() ?: 0
+
     val covered = mutableMapOf<String, MutableSet<String>>()
     val neighbourWishes = mutableListOf<Wish>()
     val distantWishes = mutableListOf<Wish>()
@@ -29,11 +37,27 @@ fun StudentSet.makeWishSet(): WishSet {
                 return true
             val otherStudent = studentMap[partner] ?: return false
 
-            val wish = Wish(student.name, otherStudent.name,
-                    /* It's kinda unnecessary to call 'priorityOf' on the current student, since we actually
-                       have this information already and could technically call maskPriority directly.
-                       However we would need to keep track of the studentMap index.*/
-                    (student.priorityOf(partner) ?: 0) + (otherStudent.priorityOf(student.name) ?: 0))
+            val cmpFirstPrior = student.priorityOf(partner) ?: 0
+            val cmpSecondPrior = student.priorityOf(student.name) ?: 0
+
+            val cmpPriorSum = cmpFirstPrior + cmpSecondPrior
+
+            val priority = if ((cmpFirstPrior < 0 && cmpSecondPrior > 0)
+                    || (cmpFirstPrior > 0 && cmpSecondPrior < 0)) {
+                if (cmpPriorSum >= 0) {
+                    -maxDistantLength - cmpPriorSum
+                } else {
+                    maxNeighbourLength + cmpPriorSum
+                }
+            } else {
+                if (cmpFirstPrior < 0) {
+                    -maxDistantLength * 2 - cmpPriorSum
+                } else {
+                    maxNeighbourLength * 2 - cmpPriorSum
+                }
+            }
+
+            val wish = Wish(student.name, otherStudent.name, priority)
             when {
                 wish.priority > 0 -> neighbourWishes.add(wish)
                 wish.priority < 0 -> distantWishes.add(wish)
@@ -55,8 +79,9 @@ fun StudentSet.makeWishSet(): WishSet {
         }
         covered[student.name] = coveredPartners
     }
-    return WishSet(neighbourWishes.toList().sorted(), distantWishes.toList().sortedDescending())
+    return WishSet(neighbourWishes.toList().sortedDescending(), distantWishes.toList().sortedDescending())
 }
+
 fun List<Wish>.toMap() = map {it.names to it.priority}.toMap()
 
 /**

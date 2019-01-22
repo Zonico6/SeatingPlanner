@@ -34,32 +34,31 @@ class StudentSet(students: Iterable<Student>) {
     }
 
     /**
-     * Take the remaining groups and somehow merge them to match the remaining groupSizes.
+     * Take the remaining groups and merge them to match the remaining sizesDescending.
      * The sizes of the groups in the end are sorted.
      *
-     * @param groupSizes The remaining groupSizes. It's mandatory that those are sorted
+     * @param sizesDescending The remaining sizesDescending. It's mandatory that those are sorted in descending order
      */
-    private fun MutableList<MutableSet<String>>.trimGroups(groupSizes: MutableList<Int>) {
-        val sortedGroups = sortedBy { it.size }.toMutableList()
+    private fun MutableList<MutableSet<String>>.trimGroups(sizesDescending: MutableList<Int>) {
+        // TODO: Check if there are enough places to place all students
+        val studentsDescending = sortedByDescending { it.size }.toMutableList()
         clear()
-        while (sortedGroups.size > 0) {
+        while (studentsDescending.size > 0) {
             // Running out of group places, so just put the leftover junk together in the last one.
-            if (groupSizes.size == 1) {
-                addAll(sortedGroups)
+            if (sizesDescending.size == 1) {
+                add(studentsDescending.flatten().toMutableSet())
                 return
             }
-            val group = sortedGroups.removeAt(0)
-            for (g in sortedGroups) {
-                if (group.size + g.size <= groupSizes.first()) {
+            val group = studentsDescending.removeAt(0)
+            // Begin with the biggest remaining list
+            for (g in studentsDescending.toMutableList()) {
+                if (group.size + g.size <= sizesDescending.first()) {
                     group.addAll(g)
-                    sortedGroups.remove(g)
-                    add(group)
-                    groupSizes.removeAt(0)
-                    break
+                    studentsDescending.remove(g)
                 }
             }
             add(group)
-            groupSizes.removeAt(0)
+            sizesDescending.removeAt(0)
         }
     }
 
@@ -71,7 +70,8 @@ class StudentSet(students: Iterable<Student>) {
      */
     fun splitGroups(groupsSizes: Collection<Int>): Array<Set<String>> {
         val groupSizes = groupsSizes.toMutableList()
-        groupSizes.sort()
+        groupSizes.sortDescending()
+        // Names that have already been send to final group
         val coveredNames = mutableSetOf<String>()
         val finalGroups = mutableListOf<Set<String>>()
         val wishes = makeWishSet()
@@ -83,7 +83,8 @@ class StudentSet(students: Iterable<Student>) {
             // True: Index marks set with firstName; False: Index marks secondName; null: No set with a name found yet
             var firstN: Boolean? = null
             var index = 0
-            // Groups is gonna grow with time as new names are added after this loop
+
+            // Look for a group containing a name
             groups@ for ((i, group) in groups.withIndex()) {
                 when (firstN) {
                     null -> {
@@ -118,6 +119,7 @@ class StudentSet(students: Iterable<Student>) {
                 true -> groups[index].add(secondName)
                 false -> groups[index].add(firstName)
             }
+            // This group may not be any bigger so send it to final groups and add it's members to covered names
             if (groups[index].size >= groupSizes[0]) {
                 finalGroups.add(groups[index])
                 coveredNames.addAll(groups[index])
@@ -136,12 +138,14 @@ class StudentSet(students: Iterable<Student>) {
      * @param groupSizes Declares the sizes of the groups
      * @return The created groups of studentMap by names.
      */
-    fun split(groupSizes: List<Int>): Array<StudentSet> =
-            // splitGroups returns the student names
-            // -> Map the names to the actual student objects
-            splitGroups(groupSizes).map {
-                StudentSet(it.map { name -> studentMap[name]!! })
-            }.toTypedArray()
+    fun split(groupSizes: List<Int>): Array<StudentSet> {
+
+        val groups = splitGroups(groupSizes)
+        // Fill the remaining group spots with empty sets
+        return (0 until groupSizes.size).map { groups.getOrElse(it) { emptySet() } }.map {
+            StudentSet(it.map { name -> studentMap[name]!! })
+        }.toTypedArray()
+    }
 }
 
 /**
@@ -161,13 +165,17 @@ open class Student(val name: String, val neighbours: Array<String>, val distants
      * @return The gotten priority. If the name wasn't found, this is null.
      */
     fun priorityOf(name: String): Priority? {
-        var index = neighbours.indexOf(name)
-        return if (index != -1) {
-            maskPriority(index, neighbours.size)
-        } else {
-            index = distants.indexOf(name)
-            if (index != -1) -maskPriority(index, distants.size) else null
+        val nIndex = neighbours.indexOf(name)
+        val dIndex by lazy {
+            distants.indexOf(name)
+        }
+
+        return when {
+            nIndex != -1 -> maskPriority(nIndex, neighbours.size)
+            dIndex != -1 -> -maskPriority(dIndex, distants.size)
+            else -> null
         }
     }
+
     private fun maskPriority(index: Int, length: Int): Priority = index + length
 }

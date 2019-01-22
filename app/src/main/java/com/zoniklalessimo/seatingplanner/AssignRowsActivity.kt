@@ -1,15 +1,18 @@
 package com.zoniklalessimo.seatingplanner
 
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.view.DragEvent
-import android.view.View
+import android.os.Parcelable
+import android.view.*
 import android.widget.ArrayAdapter
+import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.zoniklalessimo.seatingplanner.assigningRows.AssignRow
 import com.zoniklalessimo.seatingplanner.assigningRows.AssignRowsAdapter
 import com.zoniklalessimo.seatingplanner.assigningRows.AssignRowsViewModel
@@ -18,6 +21,8 @@ import com.zoniklalessimo.seatingplanner.core.seating.Student
 import com.zoniklalessimo.seatingplanner.scene.EmptyTableView
 import com.zoniklalessimo.seatingplanner.scene.TablePlacer
 import kotlinx.android.synthetic.main.activity_assign_rows.*
+import java.io.Serializable
+import java.util.ArrayList
 
 const val StudentsExtraKey = "students"
 
@@ -49,20 +54,32 @@ class AssignRowsActivity : AppCompatActivity(), TablePlacer {
         //endregion
 
         //region Scene Setup
+        val inflater = layoutInflater
+
+        // It's important that you add the views before you initialize the constraintSet
+        val tableViews = List(model.getTablesLiveData().size) {
+           val infl = inflater.inflate(R.layout.assign_students_row, root, false)
+            infl.id = View.generateViewId()
+            root.addView(infl)
+            infl as FrameLayout
+        }
+
         val constraintSet = ConstraintSet()
         constraintSet.clone(root)
 
-        val inflater = layoutInflater
-        model.getTablesLiveData().forEach { liveData ->
-            val view = inflater.inflate(R.layout.assign_students_row, root, true)
+        model.getTablesLiveData().zip(tableViews).forEach { (liveData, view) ->
+            val tableView = view.findViewById<EmptyTableView>(R.id.table)
+            tableView.seatCount = liveData.value!!.seatCount
 
             view.setOnClickListener {
-                val students = liveData.value?.students ?: emptyList()
+                val students = liveData.value!!.students
 
                 AlertDialog.Builder(this).
                         setItems(students.toTypedArray()) { _, i ->
                             model.removeStudentFromTable(liveData, students[i])
-                        }
+                            model.addStudent(students[i])
+                            sidebar.adapter?.notifyItemInserted(model.studentNames.size - 1)
+                        }.show()
             }
 
             view.setOnDragListener(
@@ -84,22 +101,44 @@ class AssignRowsActivity : AppCompatActivity(), TablePlacer {
         //endregion
 
         //region Side Bar
-        val adapter = AssignRowsAdapter(model) { _, position ->
+        val adapter = AssignRowsAdapter(model) { view, position ->
             sidebar.startDragAndDrop(
                     null,
-                    View.DragShadowBuilder(),
+                    View.DragShadowBuilder(view),
                     model.studentNames[position],
                     0
             )
             true
         }
-        sidebar.setOnDragListener(SideBarsStudentDragListener(adapter))
-        sidebar.adapter = adapter
+        sidebar.apply {
+            setHasFixedSize(true)
+            layoutManager = LinearLayoutManager(this@AssignRowsActivity)
+            this.adapter = adapter
+            setOnDragListener(SideBarsStudentDragListener(adapter))
+        }
         //endregion
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.assign_rows_menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+        when (item!!.itemId) {
+            R.id.construct_plan -> {
+                val intent = Intent(this, DisplaySeatingPlanActivity::class.java)
+                intent.putParcelableArrayListExtra(SEATED_TABLE_EXTRA_NAME,
+                        constructSeatingPlan(model.getTables(), model.studentNames, studentSet) as ArrayList<out Parcelable>)
+                startActivity(intent)
+            }
+            else -> return super.onOptionsItemSelected(item)
+        }
+        return true
     }
 }
 
-class SideBarsStudentDragListener(val adapter: AddRemoveStudentAdapter) : View.OnDragListener {
+class SideBarsStudentDragListener(private val adapter: AddRemoveStudentAdapter) : View.OnDragListener {
     interface AddRemoveStudentAdapter {
         fun hideStudent(student: String): Boolean
         fun showStudent(student: String): Boolean
@@ -134,7 +173,6 @@ private class TablesStudentDragListener(
         val acceptDropHighlightColor: Int,
         val onAcceptStudent: (student: String) -> Unit) : View.OnDragListener {
     override fun onDrag(view: View, event: DragEvent): Boolean {
-        // TODO: ---
         // Entered this view:
         //   - change display number of taken seats
         // ---
@@ -142,6 +180,8 @@ private class TablesStudentDragListener(
         //   - Reset taken seats number
 
         when (event.action) {
+            DragEvent.ACTION_DRAG_STARTED -> {}
+
             DragEvent.ACTION_DRAG_ENTERED -> {
                 tableView.highlight(acceptDropHighlightColor)
             }

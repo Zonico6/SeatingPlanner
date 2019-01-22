@@ -87,6 +87,7 @@ private fun roundDistantScore(rigid: MutableRow, other: List<String>, distants: 
  * @return True if a row was created or carried.
  */
 private fun MutableList<MutableRow>.addWish(wish: Wish): Boolean {
+    // TODO: This does not work correctly: Outer most students are most often times the same, i.e. doubled
     var indexCarry: RowIndexCarry? = null
     var newName: String? = null
     for ((index, row) in this.withIndex()) {
@@ -138,7 +139,6 @@ private fun MutableList<MutableRow>.addWish(wish: Wish): Boolean {
         add(mutableListOf(newName))
         return true
     }
-    // If indexCarry is falls, do 'let' block, else the 'elvis' block
     indexCarry?.let {
         if (it.tail == ListTail.START) {
             if (this[it.index].first() == wish.firstName) {
@@ -251,16 +251,18 @@ private fun MutableList<MutableRow>.takeNextDistantRow(otherRow: Row, distants: 
 
 /**
  * Takes the rows and joins them based on the students distant-wishes so that the students that don't want to sit next
- * to each other sit as much apart as possible.
+ * to each other sit as far apart as possible.
  *
- * @param rows The rows that shall be joined.
+ * @param rows The rows to join.
  * @param wishes The [WishSet] with the distant wishes.
  * @return The joined, single row of students.
  */
 private fun join(rows: MutableList<MutableRow>, wishes: WishSet): List<String> {
+    if (rows.size == 0)
+        return emptyList()
     val distants = wishes.distants.toMap()
     // Currently it starts at the first entry of the list whereas it would actually be better to start at the row that
-    // hates another the most and sit them to the beginning/end
+    // hates another one the most and sit them to the beginning/end
     val retList = rows.removeAt(0)
     var lastRow: List<String> = retList
 

@@ -56,8 +56,7 @@ class StudentSetViewModel : ViewModel() {
         } else
             false
 
-    private fun requireStudent(index: Int): OpenableStudent =
-        students[index].requireStudent()
+    private fun requireStudent(index: Int): OpenableStudent = students[index].requireStudent()
     fun getStudents() = students.map { it.requireStudent() }
 
     val studentCount get() = students.size
@@ -86,7 +85,7 @@ class StudentSetViewModel : ViewModel() {
 
         val students = getStudents().map { student ->
             val neighbours = student.neighbours.map(builder::createString)
-            val distants = student.neighbours.map(builder::createString)
+            val distants = student.distants.map(builder::createString)
 
             val bNeighbours = com.zoniklalessimo.seatingplanner.schema.Student.createNeighboursVector(builder, neighbours.toIntArray())
             val bDistants = com.zoniklalessimo.seatingplanner.schema.Student.createDistantsVector(builder, distants.toIntArray())

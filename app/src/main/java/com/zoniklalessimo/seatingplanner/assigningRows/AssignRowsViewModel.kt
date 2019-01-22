@@ -32,9 +32,12 @@ class AssignRowsViewModel : ViewModel() {
 
         tables.find { it == table }?.value = row.copy(students = newNames)
 
-        students.value = students.value ?: emptyList<String>() - student
-
         return oldNames != newNames
+    }
+
+    fun removeStudentFromTableAndAddToStudents(table: LiveData<AssignRow>, student: String): Boolean {
+        addStudent(student)
+        return removeStudentFromTable(table, student)
     }
 
     fun addStudentToTable(table: LiveData<AssignRow>, student: String) {
@@ -50,7 +53,7 @@ class AssignRowsViewModel : ViewModel() {
     fun getStudentNamesLiveData() = students as LiveData<List<String>>
 
     val studentNames: List<String>
-        get() = students.value ?: emptyList()
+        get() = students.value!!
 
     fun initStudents(value: List<String>): Boolean {
         if (students.value == null) {
@@ -60,15 +63,22 @@ class AssignRowsViewModel : ViewModel() {
         return false
     }
 
+    fun addStudent(name: String) {
+        students.value = students.value!! + name
+    }
+
     fun removeStudent(name: String): Boolean {
-        students.value = students.value ?: emptyList<String>() - name
-        return true
+        val lenBefore = students.value!!.size
+        students.value = students.value!! - name
+        return lenBefore != students.value!!.size
     }
     //endregion
 }
 
 data class AssignRow(val students: List<String>, val xBias: Float, val yBias: Float, val seatCount: Int, val separators: SortedSet<Int>) {
-
     constructor(table: EmptyDataTable, students: List<String> = emptyList()) :
             this(students, table.xBias, table.yBias, table.seatCount, table.separators)
+
+    val availableSeats: Int
+        get() = seatCount - students.size
 }

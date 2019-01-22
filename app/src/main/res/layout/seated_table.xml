@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.zoniklalessimo.seatingplanner.displaySeatingPlan.SeatedTableView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+
+    android:layout_height="wrap_content"
+    android:layout_width="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+
+    app:borderColor="#3e1066"
+    app:borderWidth="4dp"
+    app:dividerColor="#591083"
+    app:dividerWidth="3dp"
+    app:seatColor="@color/empty_table_seat"
+    app:seatCount="@integer/new_table_seat_count"
+    app:seatHeight="@dimen/table_seat_height"
+    app:seatWidth="@dimen/table_seat_width"
+    app:separatorColor="#11257e"
+    app:separatorWidth="7dp"
+    app:cornerRadius="5dp"
+    app:textColor="#63fcfc"
+    app:textSize="22sp" />

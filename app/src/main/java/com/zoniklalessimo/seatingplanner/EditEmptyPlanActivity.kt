@@ -168,7 +168,7 @@ class EditEmptyPlanActivity : AppCompatActivity(), TableScene, OnTableDragListen
     private fun getTables(): List<EmptyDataTable> {
         val tables = mutableListOf<EmptyDataTable>()
         for (child in root) {
-            if (child is EmptyTableView) {
+            if (child is EmptyTableView && child.id != R.id.edit_separators_table) {
                 val xBias = getBias(child.x, child.width.toFloat(), root.width.toFloat())
                 val yBias = getBias(child.y, child.height.toFloat(), root.height.toFloat())
                 tables.add(EmptyDataTable(xBias, yBias, child.seatCount, child.separators))

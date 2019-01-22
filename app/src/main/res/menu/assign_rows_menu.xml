@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/construct_plan"
+        android:icon="@drawable/ic_launch_black_24dp"
+        android:title="@string/construct_plan"
+        app:showAsAction="ifRoom" />
+</menu>

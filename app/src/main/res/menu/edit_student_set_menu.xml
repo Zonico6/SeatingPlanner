@@ -9,6 +9,11 @@
         app:showAsAction="always" />
 
     <item
+        android:id="@+id/merge_with_plan"
+        android:icon="@drawable/ic_launch_black_24dp"
+        android:title="@string/place_student_on_plan"
+        app:showAsAction="ifRoom" />
+    <item
         android:id="@+id/save"
         android:icon="@drawable/ic_save_black_24dp"
         android:title="@string/save"

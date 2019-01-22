@@ -31,4 +31,6 @@
     <string name="choose_student_set_dialog_title">Choose Students</string>
     <string name="add_student_set_descr">Add a new set of students</string>
     <string name="add_btn_text">Add</string>
+    <string name="place_student_on_plan">Place Students</string>
+    <string name="construct_plan">Construct</string>
 </resources>

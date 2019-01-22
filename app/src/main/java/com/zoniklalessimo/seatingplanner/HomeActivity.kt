@@ -1,14 +1,13 @@
 package com.zoniklalessimo.seatingplanner
 
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProviders
-import com.zoniklalessimo.seatingplanner.choosingEmptyPlan.ChooseEmptyTablePlanDialogFragment
-import com.zoniklalessimo.seatingplanner.choosingEmptyPlan.ChoosePlanDialogViewModel
-import com.zoniklalessimo.seatingplanner.choosingEmptyPlan.ChoosePlanEntry
+import com.zoniklalessimo.seatingplanner.choosingEmptyPlan.*
 import com.zoniklalessimo.seatingplanner.choosingStudentSet.ChooseStudentSetDialogFragment
 import com.zoniklalessimo.seatingplanner.choosingStudentSet.ChooseStudentSetViewModel
 import com.zoniklalessimo.seatingplanner.schema.StudentSet
@@ -28,7 +27,22 @@ class HomeActivity : AppCompatActivity() {
         model.baseDir = dataDir
 
         sample_table.setOnClickListener {
+            Log.d("-----------", "--------------")
+            for (entry in model.entries.value!!) {
+                Log.d("Entry", entry.toSaveString())
+            }
+            Log.d("-----------", "----------------")
+            for (table in EmptyDataTablePlan.fromSaveFile(
+                    model.emptyPlanDir.listFiles().first()).tables) {
+                Log.d("Table", "x: ${table.xBias}, y: ${table.yBias}, seats: ${table.seatCount}")
+            }
+        }
+
+        delete_student_sets.setOnClickListener {
             model.deleteStudentSets()
+        }
+        delete_empty_plans.setOnClickListener {
+            model.deleteEmptyPlans()
         }
     }
 
@@ -48,25 +62,35 @@ class HomeActivity : AppCompatActivity() {
 }
 
 class HomeActivityViewModel : ViewModel(), ChoosePlanDialogViewModel, ChooseStudentSetViewModel {
-    override val studentSets: MutableLiveData<List<StudentSet>> = MutableLiveData()
-    override lateinit var studentSetDir: File
+    companion object {
+        const val EMPTY_PLAN_ENTRY_FILE = "emptyPlanEntries.txt"
+        const val EMPTY_PLANS_DIR_NAME = "emptyPlans"
+        const val STUDENT_SETS_DIR_NAME = "studentSets"
+
+        lateinit var baseDirectory: File
+    }
 
     var baseDir: File? = null
         set(value) {
             if (value != null) {
-                studentSetDir = File(value, "studentSets")
+                baseDirectory = value
+
+                studentSetDir = File(value, STUDENT_SETS_DIR_NAME)
                 if (!studentSetDir.exists())
                     studentSetDir.mkdir()
 
-                emptyPlanDir = File(value, "emptyPlans")
+                emptyPlanDir = File(value, EMPTY_PLANS_DIR_NAME)
                 if (!emptyPlanDir.exists())
                     emptyPlanDir.mkdir()
 
-                emptyPlanEntries = File(value, "emptyPlanEntries.txt")
+                emptyPlanEntries = File(value, EMPTY_PLAN_ENTRY_FILE)
                 if (!emptyPlanEntries.exists())
                     emptyPlanEntries.createNewFile()
             }
         }
+
+    override val studentSets: MutableLiveData<List<StudentSet>> = MutableLiveData()
+    override lateinit var studentSetDir: File
 
     override lateinit var emptyPlanDir: File
     override lateinit var emptyPlanEntries: File

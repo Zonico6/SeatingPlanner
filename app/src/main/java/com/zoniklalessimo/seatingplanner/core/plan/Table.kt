@@ -4,8 +4,6 @@ import com.zoniklalessimo.seatingplanner.core.seating.Student
 import com.zoniklalessimo.seatingplanner.core.seating.StudentSet
 import com.zoniklalessimo.seatingplanner.core.seating.constructStraightTable
 
-const val SEAT_WIDTH: Int = 200
-
 open class Table(var students: Array<String?>) {
     constructor(students: Array<String?>, seatCount: Int) :
             this(students) {
@@ -68,12 +66,16 @@ open class Table(var students: Array<String?>) {
     }
 }
 
+/**
+ * One row with separators. Capable of yielding the single, separated tables.
+ */
 open class TableRow(val tables: IntArray, students: Array<String?>) : Table(students) {
 
     constructor(tables: Array<Table>) :
-            this(tables.map { it.seatCount }.toIntArray(), tables.fold(arrayOf(), {a, e -> a + e.students}))
+            this(tables.map { it.seatCount }.toIntArray(),
+                    tables.fold(arrayOf()) { a, e -> a + e.students})
 
-    fun getPlacedTables(): List<Table> {
+    fun getSingleTables(): List<Table> {
         val plTables = mutableListOf<Table>()
         var currentIndex = 0
         for (tableSize in tables) {
@@ -83,7 +85,7 @@ open class TableRow(val tables: IntArray, students: Array<String?>) : Table(stud
         }
         return plTables
     }
-    // TODO: When shortening or inflating, tables doesn't get updated. One should take strip or add the tableSizes in the end of the array.
+    // TODO: When shortening or inflating, tables don't get updated. One should take strip or add the tableSizes in the end of the array.
 }
 // TODO: Add round tables
 

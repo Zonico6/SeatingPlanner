@@ -22,9 +22,13 @@ data class EmptyDataTablePlan(val name: String, val tables: Iterable<EmptyDataTa
         }
 
         fun fromSaveFile(src: File): EmptyDataTablePlan {
+            val reader = JsonReader(InputStreamReader(FileInputStream(src)))
+            return fromJson(reader, src)
+        }
+
+        fun fromJson(reader: JsonReader, src: File): EmptyDataTablePlan {
             val tables = mutableListOf<EmptyDataTable>()
 
-            val reader = JsonReader(InputStreamReader(FileInputStream(src)))
             reader.beginObject()
             var nameVal = ""
             while (reader.hasNext()) {
@@ -53,7 +57,7 @@ data class EmptyDataTablePlan(val name: String, val tables: Iterable<EmptyDataTa
             return tables.toTypedArray()
         }
 
-        fun saveTables(writer: JsonWriter, tables: Iterable<EmptyDataTable>) {
+        fun writeTables(writer: JsonWriter, tables: Iterable<EmptyDataTable>) {
             writer.beginArray()
             for (table in tables) {
                 table.write(writer)
@@ -83,7 +87,7 @@ data class EmptyDataTablePlan(val name: String, val tables: Iterable<EmptyDataTa
             json.beginObject()
             json.name("name").value(name)
             json.name("tables")
-            saveTables(json, tables)
+            writeTables(json, tables)
             json.endObject()
         }
     }

@@ -1,5 +1,6 @@
 package com.zoniklalessimo.seatingplanner
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
@@ -8,6 +9,7 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.zoniklalessimo.seatingplanner.studentSet.ChooseEmptyTablePlanDialogFragment
 import com.zoniklalessimo.seatingplanner.studentSet.OpenableStudent
 import com.zoniklalessimo.seatingplanner.studentSet.StudentSetAdapter
 import com.zoniklalessimo.seatingplanner.studentSet.StudentSetViewModel
@@ -76,6 +78,9 @@ class EditStudentSetActivity : AppCompatActivity() {
             }
             R.id.save -> {
                 save()
+            }
+            R.id.merge_with_plan -> {
+                ChooseEmptyTablePlanDialogFragment().show(supportFragmentManager, "choose_empty_table_for_assigning_rows")
             }
             else -> return super.onOptionsItemSelected(item)
         }

@@ -12,7 +12,7 @@ interface TablePlacer {
     // Make sure the biases are within range
     private fun checkBias(bias: Float): Float =
             when {
-                bias < 0 -> {
+                bias <= 0 -> {
                     Log.e(LOG_TAG, "Bias was less than 0: $bias")
                     0.001f
                 }
